@@ -3,21 +3,7 @@
 import { useState } from "react";
 import RocketEffect from "./RocketEffect";
 
-const multiplierScale = [
-  "7.00x",
-  "6.00x",
-  "5.00x",
-  "4.00x",
-  "3.00x",
-  "2.00x",
-  "1.50x",
-  "1.20x",
-  "1.10x",
-  "1.05x",
-  "1.02x",
-  "1.01x",
-  "0.00x",
-];
+// Scale overlay is rendered inside RocketEffect to align with the video container
 
 const livePlayers = [
   { username: "Risktakerz", bet: "0.1000", status: "JOINED" },
@@ -191,6 +177,8 @@ export default function CenterGame() {
 
         {/* Rocket Effect Component */}
         <RocketEffect />
+
+        {/* Scale overlay moved to RocketEffect for exact alignment with video */}
       </div>
     </div>
   );

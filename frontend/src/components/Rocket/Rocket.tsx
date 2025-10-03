@@ -1,39 +1,32 @@
 "use client";
 
 import type React from "react";
-
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 
-// Register the MotionPathPlugin
-gsap.registerPlugin(MotionPathPlugin);
-
-interface RocketWithExhaustProps {
+interface RocketProps {
   position?: number;
   size?: number;
   multiplierScaleRef?: React.RefObject<HTMLDivElement | null>;
   flameIntensity?: number;
   smokeDensity?: number;
-  // Speed control array - path is divided into array.length segments
-  speedArray?: number[]; // Array of speed multipliers for each segment
-  totalDuration?: number; // Total animation duration in seconds
+  speedArray?: number[];
+  totalDuration?: number;
 }
 
-export default function RocketWithExhaust({
+export default function Rocket({
   position = 20,
   size = 250,
   multiplierScaleRef,
   flameIntensity = 1,
   smokeDensity = 1,
-  speedArray = [1, 1, 1], // Default: 3 segments with normal speed
+  speedArray = [1, 1, 1],
   totalDuration = 6,
-}: RocketWithExhaustProps) {
+}: RocketProps) {
   const flameRef = useRef<SVGGElement>(null);
   const turbulenceRef = useRef<SVGFETurbulenceElement>(null);
   const frameRef = useRef<number | undefined>(undefined);
   const rocketContainerRef = useRef<HTMLDivElement>(null);
-  const motionPathRef = useRef<gsap.core.Timeline | null>(null);
+  const motionPathRef = useRef<null | undefined>(undefined);
 
   useEffect(() => {
     if (!flameRef.current) return;
@@ -41,7 +34,6 @@ export default function RocketWithExhaust({
     const animateTurbulence = () => {
       if (turbulenceRef.current) {
         const time = Date.now() * 0.001;
-        // More dynamic turbulence for realistic flame movement
         turbulenceRef.current.setAttribute(
           "baseFrequency",
           `${0.03 + Math.sin(time * 3) * 0.015} ${
@@ -56,7 +48,6 @@ export default function RocketWithExhaust({
       frameRef.current = requestAnimationFrame(animateTurbulence);
     };
 
-    // Start turbulence animation
     animateTurbulence();
 
     return () => {
@@ -66,129 +57,16 @@ export default function RocketWithExhaust({
     };
   }, [flameIntensity, smokeDensity]);
 
-  // Custom easing function for variable speed control based on array
-  const createVariableSpeedEase = (speedArray: number[]) => {
-    return (progress: number) => {
-      const segmentCount = speedArray.length;
-      const segmentSize = 1 / segmentCount;
-      
-      // Find which segment the current progress falls into
-      const currentSegment = Math.min(Math.floor(progress / segmentSize), segmentCount - 1);
-      
-      // Calculate progress within the current segment
-      const segmentStart = currentSegment * segmentSize;
-      const segmentProgress = (progress - segmentStart) / segmentSize;
-      
-      // Calculate cumulative progress up to current segment
-      let cumulativeProgress = 0;
-      for (let i = 0; i < currentSegment; i++) {
-        cumulativeProgress += speedArray[i] * segmentSize;
-      }
-      
-      // Add progress within current segment
-      cumulativeProgress += speedArray[currentSegment] * segmentSize * segmentProgress;
-      
-      return cumulativeProgress;
-    };
-  };
-
-  // MotionPath animation effect
-  useEffect(() => {
-    if (!rocketContainerRef.current) return;
-
-    const rocketElement = rocketContainerRef.current;
-
-    gsap.set(rocketElement, {
-      x: 0,
-      y: 0,
-      rotation: 0,
-      opacity: 1,
-      scale: 1,
-      transformOrigin: "center center",
-    });
-
-    // Use the actual SVG path element via its id so GSAP treats this as a selector,
-    // not as a CSS selector string (which would throw on raw path data)
-    const pathSelector = "#rocketPath";
-
-    const motionTimeline = gsap.timeline({
-      repeat: -1,
-      repeatDelay: 2,
-    });
-
-    // Create custom ease function based on speed array
-    const customEase = createVariableSpeedEase(speedArray);
-
-    motionTimeline
-      .to(rocketElement, {
-        duration: totalDuration,
-        motionPath: {
-          path: pathSelector,
-          align: pathSelector,
-          autoRotate: true,
-          alignOrigin: [0.5, 0.5],
-          start: 0,
-          end: 1,
-        },
-        ease: customEase, // ⬅️ Custom variable speed control based on array
-      })
-      .to(rocketElement, { duration: 2 }) // stay at end
-      .to(rocketElement, {
-        opacity: 0,
-        scale: 0.8,
-        duration: 1.5,
-      })
-      .set(rocketElement, {
-        x: 0,
-        y: 0,
-        rotation: 0,
-        scale: 1,
-        opacity: 0,
-      })
-      .to(rocketElement, { opacity: 1, duration: 0.5 });
-
-    motionPathRef.current = motionTimeline;
-
-    return () => {
-      motionTimeline.kill();
-    };
-  }, [speedArray, totalDuration]);
-
   return (
     <>
-      {/* Updated SVG path to match the smoother motion */}
-      <svg
-        width="800"
-        height="64"
-        viewBox="0 0 800 64"
-        className="absolute pointer-events-none"
-        style={{
-          zIndex: 0,
-          left: "-10px",
-          top: "380px",
-          width: "800px",
-          height: "64px",
-        }}
-      >
-        <path
-          id="rocketPath"
-          d="M0,60 L80,60 L160,60 L240,60 L320,60 L400,60 L480,59 L560,58 L640,57 L720,56 L800,55"
-          stroke="rgba(255, 100, 100, 0.6)"
-          strokeWidth="3"
-          fill="none"
-          strokeDasharray="8,4"
-          opacity="0.8"
-        />
-      </svg>
-
-      {/* Rocket Container */}
       <div
         ref={rocketContainerRef}
         className="absolute"
         style={{
-          left: "-10px",
-          top: "380px",
+          left: "50%",
+          top: "50%",
           transform: "translate(-50%, -50%)",
+          animation: "jitter 0.2s linear infinite",
         }}
       >
         <svg
@@ -290,7 +168,6 @@ export default function RocketWithExhaust({
               <stop offset="100%" stopColor="transparent" stopOpacity="0" />
             </radialGradient>
 
-            {/* Enhanced metallic gradients for rocket */}
             <linearGradient
               id="metallicRed"
               x1="0%"
@@ -363,7 +240,6 @@ export default function RocketWithExhaust({
           </defs>
 
           <g ref={flameRef} filter="url(#flameTurbulence)">
-            {/* Ultra-wide atmospheric glow */}
             <ellipse
               cx="230"
               cy="120"
@@ -373,8 +249,6 @@ export default function RocketWithExhaust({
               opacity="0.3"
               filter="url(#intenseGlow)"
             />
-
-            {/* Wide outer glow layer */}
             <ellipse
               cx="225"
               cy="120"
@@ -383,8 +257,6 @@ export default function RocketWithExhaust({
               fill="url(#flameGlow)"
               opacity="0.5"
             />
-
-            {/* Outer flame layer - extended reach */}
             <ellipse
               cx="220"
               cy="120"
@@ -393,8 +265,6 @@ export default function RocketWithExhaust({
               fill="url(#flameOuter)"
               opacity="0.8"
             />
-
-            {/* Mid-outer flame layer */}
             <ellipse
               cx="215"
               cy="120"
@@ -403,8 +273,6 @@ export default function RocketWithExhaust({
               fill="url(#flameOuter)"
               opacity="0.9"
             />
-
-            {/* Mid flame layer - intense middle section */}
             <ellipse
               cx="210"
               cy="120"
@@ -413,8 +281,6 @@ export default function RocketWithExhaust({
               fill="url(#flameMid)"
               opacity="0.95"
             />
-
-            {/* Inner-mid flame layer */}
             <ellipse
               cx="205"
               cy="120"
@@ -423,8 +289,6 @@ export default function RocketWithExhaust({
               fill="url(#flameMid)"
               opacity="1"
             />
-
-            {/* Core flame layer - hottest center */}
             <ellipse
               cx="200"
               cy="120"
@@ -433,8 +297,6 @@ export default function RocketWithExhaust({
               fill="url(#flameCore)"
               opacity="1"
             />
-
-            {/* Ultra-bright inner core */}
             <ellipse
               cx="195"
               cy="120"
@@ -444,8 +306,6 @@ export default function RocketWithExhaust({
               opacity="1"
               filter="url(#intenseGlow)"
             />
-
-            {/* Blazing white-hot center */}
             <ellipse
               cx="190"
               cy="120"
@@ -458,7 +318,6 @@ export default function RocketWithExhaust({
           </g>
         </svg>
 
-        {/* Rocket SVG */}
         <svg
           width="200"
           height="200"
@@ -491,55 +350,42 @@ export default function RocketWithExhaust({
             d="M415.346 280.488C382.043 274.578 344.175 271.471 303.984 271.962C273.097 272.34 243.534 274.809 216.322 278.984C224.457 289.248 231.995 300.428 238.842 312.412L417.682 297.084C417.656 296.36 417.62 295.634 417.575 294.907C417.266 289.943 416.509 285.125 415.346 280.488ZM313.263 475.578C279.923 480.566 247.849 482.915 218.409 482.89C227.769 468.516 235.977 452.716 242.858 435.767L421.697 420.439C421.761 421.16 421.816 421.883 421.862 422.61C422.472 432.398 421.292 441.923 418.604 450.856C387.244 461.284 351.504 469.856 313.263 475.578Z"
             fill="#421116"
           />
-
-          {/* Main rocket body with base metallic red */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M202.714 310.225C213.27 337.551 219.601 368.943 220.319 402.424C220.699 420.187 219.476 437.43 216.843 453.85C260.914 469.25 331.495 473.591 409.188 462.877C502.995 449.942 580.648 418.717 611.314 385.196C622.032 375.524 627.932 364.959 627.93 353.897C627.921 307.715 525.058 270.346 398.18 270.429C315.6 270.484 243.201 286.391 202.714 310.225Z"
             fill="url(#metallicRed)"
           />
-
-          {/* Metallic shadow layer */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M202.714 310.225C213.27 337.551 219.601 368.943 220.319 402.424C220.699 420.187 219.476 437.43 216.843 453.85C260.914 469.25 331.495 473.591 409.188 462.877C502.995 449.942 580.648 418.717 611.314 385.196C622.032 375.524 627.932 364.959 627.93 353.897C627.921 307.715 525.058 270.346 398.18 270.429C315.6 270.484 243.201 286.391 202.714 310.225Z"
             fill="url(#metallicShadow)"
           />
-
-          {/* Metallic highlight overlay */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M202.714 310.225C213.27 337.551 219.601 368.943 220.319 402.424C220.699 420.187 219.476 437.43 216.843 453.85C260.914 469.25 331.495 473.591 409.188 462.877C502.995 449.942 580.648 418.717 611.314 385.196C622.032 375.524 627.932 364.959 627.93 353.897C627.921 307.715 525.058 270.346 398.18 270.429C315.6 270.484 243.201 286.391 202.714 310.225Z"
             fill="url(#metallicHighlight)"
           />
-
-          {/* Metallic reflection layer */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M202.714 310.225C213.27 337.551 219.601 368.943 220.319 402.424C220.699 420.187 219.476 437.43 216.843 453.85C260.914 469.25 331.495 473.591 409.188 462.877C502.995 449.942 580.648 418.717 611.314 385.196C622.032 375.524 627.932 364.959 627.93 353.897C627.921 307.715 525.058 270.346 398.18 270.429C315.6 270.484 243.201 286.391 202.714 310.225Z"
             fill="url(#metallicReflection)"
           />
-
-          {/* Primary shine effect */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M202.714 310.225C213.27 337.551 219.601 368.943 220.319 402.424C220.699 420.187 219.476 437.43 216.843 453.85C260.914 469.25 331.495 473.591 409.188 462.877C502.995 449.942 580.648 418.717 611.314 385.196C622.032 375.524 627.932 364.959 627.93 353.897C627.921 307.715 525.058 270.346 398.18 270.429C315.6 270.484 243.201 286.391 202.714 310.225Z"
             fill="url(#metallicShine)"
           />
-
-          {/* Spotlight shine effect */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M202.714 310.225C213.27 337.551 219.601 368.943 220.319 402.424C220.699 420.187 219.476 437.43 216.843 453.85C260.914 469.25 331.495 473.591 409.188 462.877C502.995 449.942 580.648 418.717 611.314 385.196C622.032 375.524 627.932 364.959 627.93 353.897C627.921 307.715 525.058 270.346 398.18 270.429C315.6 270.484 243.201 286.391 202.714 310.225Z"
             fill="url(#metallicSpotlight)"
           />
-
           <path
             fillRule="evenodd"
             clipRule="evenodd"
@@ -652,40 +498,6 @@ export default function RocketWithExhaust({
                 result="effect1_innerShadow_2_148"
               />
             </filter>
-            <linearGradient
-              id="paint0_linear_2_148"
-              x1="291.382"
-              y1="220.206"
-              x2="297.705"
-              y2="305.646"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#BC1C2B" />
-              <stop offset="1" stopColor="#931420" />
-            </linearGradient>
-            <linearGradient
-              id="paint1_linear_2_148"
-              x1="309.724"
-              y1="520.331"
-              x2="292.531"
-              y2="463.133"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#BC1B2A" />
-              <stop offset="1" stopColor="#931420" />
-            </linearGradient>
-            <linearGradient
-              id="paint2_linear_2_148"
-              x1="545.664"
-              y1="292.987"
-              x2="370.984"
-              y2="452.815"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#DA3329" />
-              <stop offset="0.5125" stopColor="#BA1E26" />
-              <stop offset="1" stopColor="#A01C23" />
-            </linearGradient>
             <radialGradient
               id="paint3_radial_2_148"
               cx="0"

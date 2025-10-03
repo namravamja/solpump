@@ -2,14 +2,14 @@
 
 /* Font families */
 :root {
-  --font-inter: 'Inter', sans-serif;
-  --font-jetbrains-mono: 'JetBrains Mono', monospace;
+  --font-inter: "Inter", sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", monospace;
 }
 
 /* Base typography */
 body {
   font-family: var(--font-inter);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   background-color: #000000;
   overflow-x: hidden;
 }
@@ -34,7 +34,7 @@ html {
 .price-text {
   font-family: var(--font-jetbrains-mono);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
+  font-feature-settings: "tnum";
 }
 
 /* Headers and UI text */
@@ -46,6 +46,16 @@ html {
 ::-webkit-scrollbar {
   width: 0px;
   background: transparent;
+}
+
+/* Rocket animation keyframes */
+@keyframes rocketMove {
+  0% {
+    transform: translateX(-150px);
+  }
+  100% {
+    transform: translateX(calc(60vw - 80px));
+  }
 }
 
 ::-webkit-scrollbar-track {
@@ -94,8 +104,13 @@ html {
 
 /* Animated background */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .float-animation {
@@ -111,7 +126,8 @@ html {
 
 /* Neon text effect */
 .neon-text {
-  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor,
+    0 0 15px currentColor;
 }
 
 /* Rocket glow effect */
@@ -120,14 +136,19 @@ html {
 }
 
 .rocket-glow::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -15px;
   left: 50%;
   transform: translateX(-50%);
   width: 8px;
   height: 8px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0.4) 30%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.8) 0%,
+    rgba(59, 130, 246, 0.4) 30%,
+    transparent 70%
+  );
   border-radius: 50%;
   animation: rocketGlow 2s ease-in-out infinite alternate;
   z-index: 1;
@@ -151,18 +172,19 @@ html {
 }
 
 .rocket-smoke::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -30px;
   left: 50%;
   transform: translateX(-50%);
   width: 12px;
   height: 35px;
-  background: linear-gradient(to bottom, 
-    rgba(255, 255, 255, 0.9) 0%, 
-    rgba(240, 240, 240, 0.8) 20%, 
-    rgba(220, 220, 220, 0.6) 40%, 
-    rgba(200, 200, 200, 0.4) 60%, 
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(240, 240, 240, 0.8) 20%,
+    rgba(220, 220, 220, 0.6) 40%,
+    rgba(200, 200, 200, 0.4) 60%,
     rgba(180, 180, 180, 0.2) 80%,
     transparent 100%
   );
@@ -172,17 +194,18 @@ html {
 }
 
 .rocket-smoke::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -25px;
   left: 50%;
   transform: translateX(-50%);
   width: 16px;
   height: 30px;
-  background: linear-gradient(to bottom, 
-    rgba(255, 255, 255, 0.8) 0%, 
-    rgba(245, 245, 245, 0.7) 25%, 
-    rgba(230, 230, 230, 0.5) 50%, 
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(245, 245, 245, 0.7) 25%,
+    rgba(230, 230, 230, 0.5) 50%,
     rgba(210, 210, 210, 0.3) 75%,
     transparent 100%
   );
@@ -210,7 +233,36 @@ html {
   }
 }
 
-/* Rocket animations are now handled by GSAP */
+/* Rocket jitter animation - moderate vibration */
+@keyframes jitter {
+  0% {
+    transform: translate(-50%, -50%) translateX(0) translateY(0) rotate(0deg);
+  }
+  12.5% {
+    transform: translate(-50%, -50%) translateX(1px) translateY(-1px) rotate(0.3deg);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(1.5px) translateY(-1.5px) rotate(0.5deg);
+  }
+  37.5% {
+    transform: translate(-50%, -50%) translateX(-1px) translateY(1px) rotate(-0.3deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(-1.5px) translateY(1.5px) rotate(-0.5deg);
+  }
+  62.5% {
+    transform: translate(-50%, -50%) translateX(0.8px) translateY(-0.8px) rotate(0.2deg);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(-0.8px) translateY(0.8px) rotate(-0.2deg);
+  }
+  87.5% {
+    transform: translate(-50%, -50%) translateX(0.5px) translateY(-0.5px) rotate(0.1deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(0) translateY(0) rotate(0deg);
+  }
+}
 
 /* Custom button hover effects */
 .btn-hover {
@@ -219,13 +271,18 @@ html {
 }
 
 .btn-hover::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s;
 }
 
