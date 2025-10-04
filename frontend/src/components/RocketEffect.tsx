@@ -10,6 +10,7 @@ const RocketEffect = () => {
   const [countdown, setCountdown] = useState(0);
   const [isNearCompletion, setIsNearCompletion] = useState(false);
   const [showBoomEffect, setShowBoomEffect] = useState(false);
+  const [showRedFlash, setShowRedFlash] = useState(false);
   const [rocketPosition, setRocketPosition] = useState({ x: 0, y: 0 });
   const rocketRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +49,14 @@ const RocketEffect = () => {
           }
         }
         setIsNearCompletion(true);
+        // Show red flash and boom effect simultaneously
+        setShowRedFlash(true);
         setShowBoomEffect(true);
+
+        // Hide red flash after 1.3 seconds while boom video continues
+        setTimeout(() => {
+          setShowRedFlash(false);
+        }, 1300);
       }, 14600); // 14.6 seconds (allows 1.4 seconds for fade out and boom effect)
 
       return () => clearTimeout(nearCompletionTimer);
@@ -92,8 +100,9 @@ const RocketEffect = () => {
       // Reset near completion state and boom effect
       setIsNearCompletion(false);
       setShowBoomEffect(false);
-      // Start 5-second countdown
-      setCountdown(5);
+      setShowRedFlash(false);
+      // Start 8-second countdown
+      setCountdown(8);
       const countdownInterval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -132,6 +141,17 @@ const RocketEffect = () => {
           className="block w-full h-full object-cover rounded-lg"
           onLoadedData={() => console.log("[v0] Video loaded successfully")}
           onError={(e) => console.error("[v0] Video failed to load:", e)}
+          onEnded={(e) => {
+            console.log("[v0] Background video ended, restarting");
+            const video = e.target as HTMLVideoElement;
+            video.currentTime = 0;
+            video.play();
+          }}
+          onPause={(e) => {
+            console.log("[v0] Background video paused, resuming");
+            const video = e.target as HTMLVideoElement;
+            video.play();
+          }}
         />
 
         {/* Transparent overlay */}
@@ -159,16 +179,37 @@ const RocketEffect = () => {
           ))}
         </div>
 
+        {/* Red Flash Effect - covers entire video area */}
+        {showRedFlash && (
+          <div className="absolute inset-0 z-50 pointer-events-none">
+            <div
+              className="w-full h-full bg-red-600"
+              style={{
+                animation: "redFlash 1.3s ease-out",
+              }}
+            />
+          </div>
+        )}
+
         {/* Countdown Timer Display */}
         {countdown > 0 && (
           <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-            <div className="bg-black/80 backdrop-blur-sm border border-gray-600 rounded-lg px-6 py-4">
+            {/* Ring effect - multiple expanding circles */}
+            <div className="absolute w-48 h-48 rounded-full border-2 border-purple-400/30" style={{ animation: 'slowRing 3s ease-out infinite' }}></div>
+            <div className="absolute w-48 h-48 rounded-full border-2 border-purple-400/20" style={{ animation: 'slowRing 3s ease-out infinite 1s' }}></div>
+            <div className="absolute w-48 h-48 rounded-full border-2 border-purple-400/10" style={{ animation: 'slowRing 2s ease-out infinite 2s' }}></div>
+            
+            {/* Main countdown circle */}
+            <div className="w-48 h-48 bg-black/90 backdrop-blur-sm border-2 border-purple-400 rounded-full flex flex-col items-center justify-center shadow-2xl relative z-10">
               <div className="text-center">
-                <div className="text-white text-2xl font-bold mb-2">
-                  Next Launch In
+                <div className="text-white text-4xl font-bold mb-2">
+                  New Ride
                 </div>
-                <div className="text-purple-400 text-4xl font-mono">
+                <div className="text-purple-400 text-5xl font-mono font-bold">
                   {countdown}
+                </div>
+                <div className="text-white text-4xl font-bold mt-2">
+                  Starting In
                 </div>
               </div>
             </div>
@@ -179,13 +220,13 @@ const RocketEffect = () => {
         {showBoomEffect && (
           <div
             className="absolute z-40 pointer-events-none"
-              style={{
-                top: `${rocketPosition.y}px`,
-                left: `${rocketPosition.x}px`,
-                transform: "translate(-50%, -50%)",
-                width: "150px",
-                height: "150px",
-              }}
+            style={{
+              top: `${rocketPosition.y - 20}px`,
+              left: `${rocketPosition.x}px`,
+              transform: "translate(-50%, -50%)",
+              width: "150px",
+              height: "150px",
+            }}
           >
             <div
               style={{
