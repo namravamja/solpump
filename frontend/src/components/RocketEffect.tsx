@@ -12,56 +12,286 @@ const RocketEffect = () => {
   const [showBoomEffect, setShowBoomEffect] = useState(false);
   const [showRedFlash, setShowRedFlash] = useState(false);
   const [rocketPosition, setRocketPosition] = useState({ x: 0, y: 0 });
+  const [rocketY, setRocketY] = useState(0);
+  const [rocketRotation, setRocketRotation] = useState(0);
   const rocketRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [trailPoints, setTrailPoints] = useState<Array<{ x: number; y: number }>>([]);
+  const trailRafRef = useRef<number | null>(null);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log("[v0] State changes:", {
+      showRedFlash,
+      showBoomEffect,
+      isNearCompletion,
+    });
+  }, [showRedFlash, showBoomEffect, isNearCompletion]);
+
+  // Solpump-style multiplier system - single source of truth
+  const [multiplier, setMultiplier] = useState(1.0);
+  const [targetMultiplier, setTargetMultiplier] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [multiplierInterval, setMultiplierInterval] =
+    useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     console.log("[v0] RocketEffect component mounted");
     return () => {
       console.log("[v0] RocketEffect component unmounted");
+      // Cleanup multiplier interval on unmount
+      if (multiplierInterval) {
+        clearInterval(multiplierInterval);
+      }
     };
-  }, []);
+  }, [multiplierInterval]);
 
   useEffect(() => {
     console.log("[v0] Animation state changed:", { isAnimating, animationKey });
   }, [isAnimating, animationKey]);
 
-  // Timer to detect when animation is near completion (14.6 seconds to allow 1.4 seconds for fade out and boom)
+  // Update rocket position based on multiplier - perfect sync
   useEffect(() => {
     if (isAnimating) {
-      setIsNearCompletion(false);
-      const nearCompletionTimer = setTimeout(() => {
+      // Calculate Y position based on exact multiplier value
+      // Rocket moves directly with multiplier scale (1.00× = 0px, 7.00× = -480px)
+      const maxYRange = 480; // Maximum Y movement (for 7.00×)
+      const cappedMultiplier = Math.min(multiplier, targetMultiplier); // Cap at target multiplier
+
+      // Direct scale mapping: 1.00× = 0px, 7.00× = -480px
+      const multiplierRange = 7.0 - 1.0; // Range from 1.00 to 7.00
+      const scalePosition = (cappedMultiplier - 1.0) / multiplierRange; // 0-1 scale
+      const newY = -scalePosition * maxYRange; // Direct Y position based on multiplier
+
+      // Debug logging to see rocket position
+      if (multiplier > 1.0) {
         console.log(
-          "[v0] Animation near completion - starting 1.4s fade out and boom effect"
+          `[v0] Direct Scale: Multiplier: ${multiplier.toFixed(
+            2
+          )}, Target: ${targetMultiplier.toFixed(
+            2
+          )}, Scale: ${scalePosition.toFixed(3)}, Y: ${newY.toFixed(2)} (${(
+            scalePosition * 100
+          ).toFixed(1)}% of max range)`
         );
-        // Get the current rocket position
-        if (rocketRef.current) {
-          const rect = rocketRef.current.getBoundingClientRect();
-          const containerRect =
-            rocketRef.current.parentElement?.getBoundingClientRect();
-          if (containerRect) {
-            const relativeX = rect.left - containerRect.left;
-            const relativeY = rect.top - containerRect.top;
-            setRocketPosition({ x: relativeX, y: relativeY });
-            console.log("[v0] Rocket position captured:", {
-              x: relativeX,
-              y: relativeY,
-            });
-          }
-        }
-        setIsNearCompletion(true);
-        // Show red flash and boom effect simultaneously
-        setShowRedFlash(true);
-        setShowBoomEffect(true);
+      }
 
-        // Hide red flash after 1.3 seconds while boom video continues
-        setTimeout(() => {
-          setShowRedFlash(false);
-        }, 1300);
-      }, 14600); // 14.6 seconds (allows 1.4 seconds for fade out and boom effect)
+      setRocketY(newY);
 
-      return () => clearTimeout(nearCompletionTimer);
+      // Calculate rotation based on exact multiplier value
+      // Rotation moves directly with multiplier scale
+      const maxRotation = 40; // Maximum rotation (for 7.00×)
+      const newRotation = -scalePosition * maxRotation; // Direct rotation based on multiplier
+      setRocketRotation(newRotation);
     }
-  }, [isAnimating, animationKey]);
+  }, [multiplier, isAnimating, targetMultiplier]);
+
+  // Solpump-style multiplier animation logic - single source of truth
+  useEffect(() => {
+    console.log("[v0] Animation effect triggered:", {
+      isAnimating,
+      targetMultiplier,
+    });
+
+    if (!isAnimating || targetMultiplier <= 0) {
+      console.log("[v0] Animation conditions not met:", {
+        isAnimating,
+        targetMultiplier,
+      });
+      return;
+    }
+
+    console.log("[v0] Starting animation with target:", targetMultiplier);
+    let startTime = performance.now();
+    const initialDelay = 3000; // 3 seconds delay at 1.00× position
+    const fixedSpeed = 0.1; // Fixed speed: 0.1× per second (independent of target)
+
+    const animate = (time: number) => {
+      const elapsed = time - startTime;
+
+      if (elapsed <= initialDelay) {
+        // Stay at 1.00× for initial delay
+        setMultiplier(1.0);
+        setProgress(0);
+        console.log("[v0] Animation delay phase:", elapsed.toFixed(0) + "ms");
+        requestAnimationFrame(animate);
+      } else {
+        // Calculate multiplier with fixed speed (independent of target)
+        const animationElapsed = elapsed - initialDelay;
+        const secondsElapsed = animationElapsed / 1000; // Convert to seconds
+        const value = 1.0 + fixedSpeed * secondsElapsed; // Fixed speed progression
+
+        // Cap at target multiplier
+        const cappedValue = Math.min(value, targetMultiplier);
+
+        setMultiplier(parseFloat(cappedValue.toFixed(2)));
+
+        // Calculate progress for rocket movement (0-1 based on target)
+        const progress = Math.min(
+          1,
+          (cappedValue - 1.0) / (targetMultiplier - 1.0)
+        );
+        setProgress(progress);
+
+        // Log progress every 5 seconds to avoid spam
+        if (Math.floor(elapsed / 5000) !== Math.floor((elapsed - 16) / 5000)) {
+          console.log("[v0] Animation progress:", {
+            elapsed: elapsed.toFixed(0) + "ms",
+            seconds: secondsElapsed.toFixed(1) + "s",
+            multiplier: cappedValue.toFixed(2),
+            progress: progress.toFixed(3),
+            speed: fixedSpeed + "×/s",
+          });
+        }
+
+        if (value < targetMultiplier) {
+          requestAnimationFrame(animate);
+        } else {
+          // Trigger blast effect when target is reached
+          console.log("[v0] Multiplier reached target:", targetMultiplier);
+
+          // Get the current rocket position for blast effect
+          if (rocketRef.current) {
+            const rect = rocketRef.current.getBoundingClientRect();
+            const containerRect =
+              rocketRef.current.parentElement?.getBoundingClientRect();
+            if (containerRect) {
+              const relativeX = rect.left - containerRect.left;
+              const relativeY = rect.top - containerRect.top;
+              setRocketPosition({ x: relativeX, y: relativeY });
+              console.log("[v0] Rocket position captured for blast:", {
+                x: relativeX,
+                y: relativeY,
+              });
+            }
+          }
+
+          // Show blast effects immediately
+          console.log("[v0] Triggering blast effects");
+          setIsNearCompletion(true);
+          setShowRedFlash(true);
+          setShowBoomEffect(true);
+
+          // Hide red flash after 1.3 seconds while boom video continues
+          setTimeout(() => {
+            console.log("[v0] Hiding red flash");
+            setShowRedFlash(false);
+          }, 1300);
+
+          // Stop animation after blast
+          setIsAnimating(false);
+        }
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [isAnimating, targetMultiplier]);
+
+  // Initialize random target multiplier when component mounts
+  useEffect(() => {
+    console.log("[v0] Component mounted, setting initial target");
+    const randomTarget = Math.random() * 6 + 1; // Random between 1-7
+    setTargetMultiplier(parseFloat(randomTarget.toFixed(2)));
+    setMultiplier(1.0);
+    setProgress(0);
+    setRocketY(0);
+    setRocketRotation(0);
+    console.log("[v0] Initial target multiplier:", randomTarget.toFixed(2));
+
+    // Force animation to start immediately
+    setTimeout(() => {
+      console.log("[v0] Forcing animation start after 100ms");
+    }, 100);
+  }, []); // Run once on mount
+
+  // Start animation immediately when target is set
+  useEffect(() => {
+    if (isAnimating && targetMultiplier > 0) {
+      console.log("[v0] Starting animation with target:", targetMultiplier);
+    }
+  }, [isAnimating, targetMultiplier]);
+
+  // Handle video playback issues and power saving interruptions
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Page became visible, try to resume video playback
+        const videos = document.querySelectorAll("video");
+        videos.forEach((video) => {
+          if (video.paused) {
+            video
+              .play()
+              .catch((err) => console.log("[v0] Video resume failed:", err));
+          }
+        });
+      }
+    };
+
+    const handleUserInteraction = () => {
+      // User interacted with the page, ensure videos are playing
+      const videos = document.querySelectorAll("video");
+      videos.forEach((video) => {
+        if (video.paused) {
+          video
+            .play()
+            .catch((err) => console.log("[v0] Video play failed:", err));
+        }
+      });
+    };
+
+    // Listen for visibility changes
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Listen for user interactions to resume playback
+    document.addEventListener("click", handleUserInteraction);
+    document.addEventListener("touchstart", handleUserInteraction);
+    document.addEventListener("keydown", handleUserInteraction);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("touchstart", handleUserInteraction);
+      document.removeEventListener("keydown", handleUserInteraction);
+    };
+  }, []);
+
+  // Rocket trail: sample rocket tail position each frame while animating
+  useEffect(() => {
+    const sample = () => {
+      if (!isAnimating || !rocketRef.current || !containerRef.current) {
+        trailRafRef.current = requestAnimationFrame(sample);
+        return;
+      }
+
+      const rocketRect = rocketRef.current.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
+
+      // Approximate tail position near the rocket's rear
+      const tailX = rocketRect.left - containerRect.left + 12; // small offset from left edge
+      const tailY = rocketRect.top - containerRect.top + rocketRect.height * 0.55;
+
+      setTrailPoints((prev) => {
+        const next = [...prev, { x: tailX, y: tailY }];
+        // Limit trail length for performance
+        const maxPoints = 400;
+        return next.length > maxPoints ? next.slice(next.length - maxPoints) : next;
+      });
+
+      trailRafRef.current = requestAnimationFrame(sample);
+    };
+
+    trailRafRef.current = requestAnimationFrame(sample);
+    return () => {
+      if (trailRafRef.current) cancelAnimationFrame(trailRafRef.current);
+    };
+  }, [isAnimating]);
+
+  // Clear trail between rounds when countdown starts
+  useEffect(() => {
+    if (countdown > 0) {
+      setTrailPoints([]);
+    }
+  }, [countdown]);
 
   const scaleValues = [
     { value: "7.00x", isMajor: true },
@@ -97,17 +327,40 @@ const RocketEffect = () => {
   useEffect(() => {
     if (!isAnimating) {
       console.log("[v0] Starting countdown");
-      // Reset near completion state and boom effect
-      setIsNearCompletion(false);
-      setShowBoomEffect(false);
-      setShowRedFlash(false);
-      // Start 8-second countdown
-      setCountdown(8);
+      // Delay resetting effects to allow them to show
+      setTimeout(() => {
+        // Reset near completion state and boom effect
+        setIsNearCompletion(false);
+        setShowBoomEffect(false);
+        setShowRedFlash(false);
+      }, 2000); // Wait 2 seconds before resetting effects
+      // Start 5-second countdown
+      setCountdown(5);
       const countdownInterval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(countdownInterval);
             console.log("[v0] Restarting animation");
+            // Generate new random target for each game
+            const newRandomTarget = Math.random() * 6 + 1; // Random between 1-7
+            setTargetMultiplier(parseFloat(newRandomTarget.toFixed(2)));
+            console.log(
+              "[v0] New target multiplier:",
+              newRandomTarget.toFixed(2)
+            );
+            // Reset multiplier system for new animation
+            setMultiplier(1.0);
+            if (multiplierInterval) {
+              clearInterval(multiplierInterval);
+              setMultiplierInterval(null);
+            }
+            // Force reset rocket position to starting position
+            setTimeout(() => {
+              setMultiplier(1.0);
+              setProgress(0);
+              setRocketY(0);
+              setRocketRotation(0);
+            }, 50);
             // Restart animation
             setAnimationKey((prev) => prev + 1);
             setIsAnimating(true);
@@ -129,7 +382,7 @@ const RocketEffect = () => {
 
   return (
     <div className="relative h-full w-full flex justify-center items-start">
-      <div className="relative w-[96%] h-[83%] border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible">
+      <div ref={containerRef} className="relative w-[96%] h-[83%] border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible">
         {/* Background Video */}
         <video
           src="/floor.mp4"
@@ -145,19 +398,59 @@ const RocketEffect = () => {
             console.log("[v0] Background video ended, restarting");
             const video = e.target as HTMLVideoElement;
             video.currentTime = 0;
-            video.play();
+            video
+              .play()
+              .catch((err) => console.log("[v0] Video play interrupted:", err));
           }}
           onPause={(e) => {
             console.log("[v0] Background video paused, resuming");
             const video = e.target as HTMLVideoElement;
-            video.play();
+            video
+              .play()
+              .catch((err) => console.log("[v0] Video play interrupted:", err));
+          }}
+          onAbort={(e) => {
+            console.log("[v0] Video playback aborted, attempting to resume");
+            const video = e.target as HTMLVideoElement;
+            setTimeout(() => {
+              video
+                .play()
+                .catch((err) =>
+                  console.log("[v0] Video play interrupted:", err)
+                );
+            }, 100);
           }}
         />
+
+        {/* Trail SVG overlay (behind rocket) */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-[15]" xmlns="http://www.w3.org/2000/svg">
+          {trailPoints.length > 1 && (
+            <polyline
+              points={trailPoints.map((p) => `${p.x},${p.y}`).join(" ")}
+              fill="none"
+              stroke="rgba(147, 197, 253, 0.6)" /* tailwind sky-300 at 60% */
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+          {trailPoints.length > 2 && (
+            <polyline
+              points={trailPoints.map((p) => `${p.x},${p.y}`).join(" ")}
+              fill="none"
+              stroke="rgba(59, 130, 246, 0.25)" /* accent glow layer */
+              strokeWidth={7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ filter: "blur(2px)" }}
+            />
+          )}
+        </svg>
 
         {/* Transparent overlay */}
         <div className="absolute inset-0 bg-transparent pointer-events-none z-[5]" />
 
-        {/* Scale markers on the right */}
+        {/* Scale markers on the right - original static version */}
         <div className="absolute right-4 top-0 bottom-0 flex flex-col justify-between py-4 z-[6] pointer-events-none">
           {scaleValues.map((item, index) => (
             <div key={index} className="flex items-center gap-2">
@@ -179,6 +472,40 @@ const RocketEffect = () => {
           ))}
         </div>
 
+        {/* Live Multiplier Display - Centered */}
+        {countdown === 0 && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[6] pointer-events-none">
+            <div className="backdrop-blur-sm rounded-3xl px-8 py-6 mb-36">
+              <div className="text-center space-y-2">
+                {/* Current Payout Label */}
+                <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
+                  Current Payout
+                </div>
+
+                {/* Multiplier Value with Metallic Gradient */}
+                <div className="relative">
+                  <div
+                    className="text-8xl font-black tracking-tight font-mono"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 15%, #8a8a8a 50%, #e0e0e0 85%, #f5f5f5 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      textShadow:
+                        "0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.6)",
+                      filter:
+                        "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1))",
+                    }}
+                  >
+                    {multiplier.toFixed(2)}x
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Red Flash Effect - covers entire video area */}
         {showRedFlash && (
           <div className="absolute inset-0 z-50 pointer-events-none">
@@ -193,22 +520,60 @@ const RocketEffect = () => {
 
         {/* Countdown Timer Display */}
         {countdown > 0 && (
-          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
             {/* Ring effect - multiple expanding circles */}
-            <div className="absolute w-48 h-48 rounded-full border-2 border-purple-400/30" style={{ animation: 'slowRing 3s ease-out infinite' }}></div>
-            <div className="absolute w-48 h-48 rounded-full border-2 border-purple-400/20" style={{ animation: 'slowRing 3s ease-out infinite 1s' }}></div>
-            <div className="absolute w-48 h-48 rounded-full border-2 border-purple-400/10" style={{ animation: 'slowRing 2s ease-out infinite 2s' }}></div>
-            
+            <div
+              className="absolute w-48 h-48 rounded-full border-2 border-purple-400/30"
+              style={{ animation: "slowRing 3s ease-out infinite" }}
+            ></div>
+            <div
+              className="absolute w-48 h-48 rounded-full border-2 border-purple-400/20"
+              style={{ animation: "slowRing 3s ease-out infinite 1s" }}
+            ></div>
+            <div
+              className="absolute w-48 h-48 rounded-full border-2 border-purple-400/10"
+              style={{ animation: "slowRing 2s ease-out infinite 2s" }}
+            ></div>
+
             {/* Main countdown circle */}
-            <div className="w-48 h-48 bg-black/90 backdrop-blur-sm border-2 border-purple-400 rounded-full flex flex-col items-center justify-center shadow-2xl relative z-10">
-              <div className="text-center">
-                <div className="text-white text-4xl font-bold mb-2">
+            <div
+              className="w-48 h-48 backdrop-blur-sm rounded-full border-purple-400/30 flex flex-col items-center justify-center shadow-2xl relative z-10"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 50%, rgba(0,0,0,0.8) 100%)",
+                border: "2px solid rgba(168, 85, 247, 0.3)",
+                boxShadow:
+                  "0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
+              }}
+            >
+              <div className="text-center space-y-2">
+                {/* New Ride Label */}
+                <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
                   New Ride
                 </div>
-                <div className="text-purple-400 text-5xl font-mono font-bold">
-                  {countdown}
+
+                {/* Countdown Value with Metallic Gradient */}
+                <div className="relative">
+                  <div
+                    className="text-8xl font-black tracking-tight font-mono"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 15%, #8a8a8a 50%, #e0e0e0 85%, #f5f5f5 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      textShadow:
+                        "0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.6)",
+                      filter:
+                        "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1))",
+                    }}
+                  >
+                    {countdown}
+                  </div>
                 </div>
-                <div className="text-white text-4xl font-bold mt-2">
+
+                {/* Starting In Label */}
+                <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
                   Starting In
                 </div>
               </div>
@@ -262,6 +627,19 @@ const RocketEffect = () => {
                 onError={(e) =>
                   console.error("[v0] Boom effect video failed to load:", e)
                 }
+                onAbort={(e) => {
+                  console.log(
+                    "[v0] Boom effect video aborted, attempting to resume"
+                  );
+                  const video = e.target as HTMLVideoElement;
+                  setTimeout(() => {
+                    video
+                      .play()
+                      .catch((err) =>
+                        console.log("[v0] Boom video play interrupted:", err)
+                      );
+                  }, 100);
+                }}
               />
             </div>
           </div>
@@ -272,44 +650,15 @@ const RocketEffect = () => {
           key={animationKey}
           className="absolute z-20 scale-90"
           style={{
-            top: "60%",
+            top: "86%", // Move rocket down to start at 1.00× position
           }}
           initial={{ x: "-150px", y: 0, rotate: 0, opacity: 1 }}
           animate={
             isAnimating
               ? {
                   x: "calc(60vw - 80px)",
-                  y: [
-                    0,
-                    0, // 0.00 - Start position, X-axis movin
-                    -10, // 0.10 - X-axis done, ready to climb
-                    -20, // 0.15 - Begin gentle rise
-                    -50, // 0.20 - Approaching 1.00x
-                    -100, // 0.30 - At 1.00x marker (pause feel)
-                    -120, // 0.35 - Slow transition from 1.00x
-                    -160, // 0.45 - Moving toward 2.00x
-                    -220, // 0.55 - At 3.00x marker (pause feel)
-                    -250, // 0.60 - Slow transition from 3.00x
-                    -300, // 0.70 - Moving toward 4.00x
-                    -350, // 0.80 - At 4.00x marker (pause feel)
-                  ],
-                  rotate: [
-                    0, // 0.00 - Level at start
-                    0, // 0.05 - Still level
-                    -2, // 0.10 - Ready to tilt
-                    -6, // 0.15 - Very subtle tilt begins
-                    -7.5, // 0.20 - Small tilt approaching 1.00x
-                    -8, // 0.30 - At 1.00x with subtle tilt
-                    -9.2, // 0.35 - Maintaining subtle tilt
-                    -10.8, // 0.45 - Slight increase toward 2.00x
-                    -14.5, // 0.55 - At 3.00x, tilt increasing // 0.60 - Gradual tilt increase
-                    -15.5, // 0.70 - Moving toward 4.00x
-                    -16, // 0.80 - At 4.00x with noticeable tilt
-                    -16.3, // 0.85 - Continuing climb
-                    -16.7, // 0.90 - Approaching top
-                    -17, // 0.95 - Near 7.00x
-                    -17, // 1.00 - Final tilt at 7.00x
-                  ],
+                  y: rocketY,
+                  rotate: rocketRotation,
                   opacity: showBoomEffect ? 0 : 1,
                 }
               : { x: "-150px", y: 0, rotate: 0, opacity: 0 }
@@ -318,24 +667,16 @@ const RocketEffect = () => {
             isAnimating
               ? {
                   x: {
-                    duration: 12,
+                    duration: 40,
                     ease: "linear",
                   },
                   y: {
-                    duration: 16,
+                    duration: 0, // Immediate update - no animation delay
                     ease: "linear",
-                    times: [
-                      0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.35, 0.45, 0.55, 0.6, 0.7,
-                      0.8, 0.85, 0.9, 0.95, 1,
-                    ],
                   },
                   rotate: {
-                    duration: 16,
+                    duration: 0, // Immediate update - no animation delay
                     ease: "linear",
-                    times: [
-                      0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.35, 0.45, 0.55, 0.6, 0.7,
-                      0.8, 0.85, 0.9, 0.95, 1,
-                    ],
                   },
                   opacity: {
                     duration: showBoomEffect ? 1.1 : 0.5,
@@ -350,7 +691,6 @@ const RocketEffect = () => {
                   },
                 }
           }
-          onAnimationComplete={handleAnimationComplete}
         >
           <motion.div
             animate={{
