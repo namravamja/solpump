@@ -48,23 +48,26 @@ const RocketEffect = () => {
     console.log("[v0] Animation state changed:", { isAnimating, animationKey });
   }, [isAnimating, animationKey]);
 
-  // Update rocket position based on multiplier - perfect sync
+  // Update rocket position based on multiplier - rocket stops at 5.5x
   useEffect(() => {
     if (isAnimating) {
       // Calculate Y position based on exact multiplier value
-      // Rocket moves directly with multiplier scale (1.00× = 0px, 7.00× = -480px)
+      // Rocket moves directly with multiplier scale but stops at 5.5x
       const maxYRange = 480; // Maximum Y movement (for 7.00×)
-      const cappedMultiplier = Math.min(multiplier, targetMultiplier); // Cap at target multiplier
+      const rocketStopMultiplier = 5.5; // Rocket stops at 5.5x
+      const cappedMultiplier = Math.min(multiplier, rocketStopMultiplier); // Cap rocket at 5.5x
 
       // Direct scale mapping: 1.00× = 0px, 7.00× = -480px
       const multiplierRange = 7.0 - 1.0; // Range from 1.00 to 7.00
       const scalePosition = (cappedMultiplier - 1.0) / multiplierRange; // 0-1 scale
-      const newY = -scalePosition * maxYRange; // Direct Y position based on multiplier
+      const newY = -scalePosition * maxYRange; // Direct Y position based on capped multiplier
 
       // Debug logging to see rocket position
       if (multiplier > 1.0) {
         console.log(
-          `[v0] Direct Scale: Multiplier: ${multiplier.toFixed(
+          `[v0] Rocket Position: Multiplier: ${multiplier.toFixed(
+            2
+          )}, Rocket Capped At: ${cappedMultiplier.toFixed(
             2
           )}, Target: ${targetMultiplier.toFixed(
             2
@@ -77,9 +80,9 @@ const RocketEffect = () => {
       setRocketY(newY);
 
       // Calculate rotation based on exact multiplier value
-      // Rotation moves directly with multiplier scale
+      // Rotation moves directly with multiplier scale but stops at 5.5x
       const maxRotation = 40; // Maximum rotation (for 7.00×)
-      const newRotation = -scalePosition * maxRotation; // Direct rotation based on multiplier
+      const newRotation = -scalePosition * maxRotation; // Direct rotation based on capped multiplier
       setRocketRotation(newRotation);
     }
   }, [multiplier, isAnimating, targetMultiplier]);
@@ -188,7 +191,7 @@ const RocketEffect = () => {
   // Initialize random target multiplier when component mounts
   useEffect(() => {
     console.log("[v0] Component mounted, setting initial target");
-    const randomTarget = Math.random() * 6 + 1; // Random between 1-7
+    const randomTarget = Math.random() * 24 + 1; // Random between 1-24
     setTargetMultiplier(parseFloat(randomTarget.toFixed(2)));
     setMultiplier(1.0);
     setProgress(0);
@@ -304,7 +307,7 @@ const RocketEffect = () => {
             clearInterval(countdownInterval);
             console.log("[v0] Restarting animation");
             // Generate new random target for each game
-            const newRandomTarget = Math.random() * 6 + 1; // Random between 1-7
+            const newRandomTarget = Math.random() * 24 + 1; // Random between 1-24
             setTargetMultiplier(parseFloat(newRandomTarget.toFixed(2)));
             console.log(
               "[v0] New target multiplier:",
@@ -387,6 +390,38 @@ const RocketEffect = () => {
 
         {/* Transparent overlay */}
         <div className="absolute inset-0 bg-transparent pointer-events-none z-[5]" />
+
+        {/* Random Target Value Display - Left Side */}
+        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-[6] pointer-events-none">
+          <div className="backdrop-blur-sm rounded-2xl px-6 py-4 bg-black/20 border border-gray-600/30">
+            <div className="text-center space-y-2">
+              {/* Target Label */}
+              <div className="text-gray-400 text-lg font-medium tracking-[0.2em] uppercase italic">
+                Target
+              </div>
+              
+              {/* Target Value with Metallic Gradient */}
+              <div className="relative">
+                <div
+                  className="text-4xl font-black tracking-tight font-mono"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 15%, #8a8a8a 50%, #e0e0e0 85%, #f5f5f5 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    textShadow:
+                      "0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.6)",
+                    filter:
+                      "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1))",
+                  }}
+                >
+                  {targetMultiplier.toFixed(2)}x
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Scale markers on the right - original static version */}
         <div className="absolute right-4 top-0 bottom-0 flex flex-col justify-between py-4 z-[6] pointer-events-none">
