@@ -256,8 +256,6 @@ const RocketEffect = () => {
     };
   }, []);
 
-
-
   const scaleValues = [
     { value: "7.00x", isMajor: true },
     { value: "6.75x", isMajor: false },
@@ -347,7 +345,10 @@ const RocketEffect = () => {
 
   return (
     <div className="relative h-full w-full flex justify-center items-start">
-      <div ref={containerRef} className="relative w-[96%] h-[83%] border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible">
+      <div
+        ref={containerRef}
+        className="relative w-[96%] h-[83%] border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible"
+      >
         {/* Background Video */}
         <video
           src="/floor.mp4"
@@ -387,7 +388,6 @@ const RocketEffect = () => {
           }}
         />
 
-
         {/* Transparent overlay */}
         <div className="absolute inset-0 bg-transparent pointer-events-none z-[5]" />
 
@@ -399,7 +399,7 @@ const RocketEffect = () => {
               <div className="text-gray-400 text-lg font-medium tracking-[0.2em] uppercase italic">
                 Target
               </div>
-              
+
               {/* Target Value with Metallic Gradient */}
               <div className="relative">
                 <div
