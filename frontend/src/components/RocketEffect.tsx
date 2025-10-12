@@ -16,8 +16,6 @@ const RocketEffect = () => {
   const [rocketRotation, setRocketRotation] = useState(0);
   const rocketRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [trailPoints, setTrailPoints] = useState<Array<{ x: number; y: number }>>([]);
-  const trailRafRef = useRef<number | null>(null);
 
   // Debug state changes
   useEffect(() => {
@@ -255,43 +253,7 @@ const RocketEffect = () => {
     };
   }, []);
 
-  // Rocket trail: sample rocket tail position each frame while animating
-  useEffect(() => {
-    const sample = () => {
-      if (!isAnimating || !rocketRef.current || !containerRef.current) {
-        trailRafRef.current = requestAnimationFrame(sample);
-        return;
-      }
 
-      const rocketRect = rocketRef.current.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      // Approximate tail position near the rocket's rear
-      const tailX = rocketRect.left - containerRect.left + 12; // small offset from left edge
-      const tailY = rocketRect.top - containerRect.top + rocketRect.height * 0.55;
-
-      setTrailPoints((prev) => {
-        const next = [...prev, { x: tailX, y: tailY }];
-        // Limit trail length for performance
-        const maxPoints = 400;
-        return next.length > maxPoints ? next.slice(next.length - maxPoints) : next;
-      });
-
-      trailRafRef.current = requestAnimationFrame(sample);
-    };
-
-    trailRafRef.current = requestAnimationFrame(sample);
-    return () => {
-      if (trailRafRef.current) cancelAnimationFrame(trailRafRef.current);
-    };
-  }, [isAnimating]);
-
-  // Clear trail between rounds when countdown starts
-  useEffect(() => {
-    if (countdown > 0) {
-      setTrailPoints([]);
-    }
-  }, [countdown]);
 
   const scaleValues = [
     { value: "7.00x", isMajor: true },
@@ -422,30 +384,6 @@ const RocketEffect = () => {
           }}
         />
 
-        {/* Trail SVG overlay (behind rocket) */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-[15]" xmlns="http://www.w3.org/2000/svg">
-          {trailPoints.length > 1 && (
-            <polyline
-              points={trailPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-              fill="none"
-              stroke="rgba(147, 197, 253, 0.6)" /* tailwind sky-300 at 60% */
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
-          {trailPoints.length > 2 && (
-            <polyline
-              points={trailPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-              fill="none"
-              stroke="rgba(59, 130, 246, 0.25)" /* accent glow layer */
-              strokeWidth={7}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ filter: "blur(2px)" }}
-            />
-          )}
-        </svg>
 
         {/* Transparent overlay */}
         <div className="absolute inset-0 bg-transparent pointer-events-none z-[5]" />
