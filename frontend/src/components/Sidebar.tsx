@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useUser } from "../hooks/UserContext";
 
 const chatMessages = [
   {
@@ -29,6 +30,118 @@ const chatMessages = [
 export default function Sidebar() {
   const [message, setMessage] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useUser();
+  const [users, setUsers] = useState<{ id?: string; name: string }[]>([]);
+  const [participants, setParticipants] = useState(213);
+  const [airdropAmount, setAirdropAmount] = useState<number | null>(null);
+  const [endsAt, setEndsAt] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date>(new Date());
+  const backendBase = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000", []);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await fetch(`${backendBase}/api/users`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = (data?.users ?? []) as any[];
+          setUsers(list.map(u => ({ id: u.id, name: u.name })));
+          setParticipants(Array.isArray(list) ? list.length : 0);
+        }
+      } catch {}
+    };
+    run();
+    const t = setInterval(run, 15000);
+    return () => clearInterval(t);
+  }, [backendBase]);
+
+  useEffect(() => {
+    const loadAirdrop = async () => {
+      try {
+        const res = await fetch(`${backendBase}/api/airdrop`);
+        if (res.ok) {
+          const data = await res.json();
+          setAirdropAmount(Number(data?.amount ?? 0));
+          setEndsAt(data?.endsAt ? new Date(data.endsAt) : null);
+          setNow(new Date());
+        }
+      } catch {}
+    };
+    loadAirdrop();
+    const t = setInterval(loadAirdrop, 30000);
+    const tick = setInterval(() => setNow(new Date()), 1000);
+    return () => { clearInterval(t); clearInterval(tick); };
+  }, [backendBase]);
+
+  const remaining = useMemo(() => {
+    if (!endsAt) return null;
+    const ms = Math.max(0, endsAt.getTime() - now.getTime());
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+    const s = (totalSec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }, [endsAt, now]);
+
+  const messages = useMemo(() => {
+    if (!user && users.length === 0) return chatMessages;
+    const rows = (user ? [{ id: 'me', username: user.name, level: "1", message: "", avatar: "👤" }] : [])
+      .concat(users.filter(u => !user || u.name !== user.name).slice(0, 10).map((u, i) => ({ id: u.id ?? i, username: u.name, level: String(1 + (i % 20)), message: "", avatar: i % 2 ? "👨‍🚀" : "🦜" })));
+    return rows;
+  }, [user, users]);
+
+  const [chatFeed, setChatFeed] = useState(messages);
+  const feedInit = useRef(false);
+  const chatListRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Initialize feed on first compute
+    if (!feedInit.current) {
+      setChatFeed(messages);
+      feedInit.current = true;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    // Random chat generator (frontend only)
+    const phrases = [
+      "gm",
+      "nice run!",
+      "sending luck 🍀",
+      "brb",
+      "any airdrop soon?",
+      "lol",
+      "rip",
+      "Let's go 🚀",
+      "cashout or no?",
+      "need 0.005 for fee"
+    ];
+    function randomAvatar(i: number) { return i % 2 ? "👨‍🚀" : "🦜"; }
+    let i = 0;
+    const interval = setInterval(() => {
+      const pool = users.length ? users : [{ name: "Guest" } as any];
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      const text = phrases[Math.floor(Math.random() * phrases.length)];
+      const next = {
+        id: `auto-${Date.now()}`,
+        username: pick.name,
+        level: String(1 + ((i++) % 20)),
+        message: text,
+        avatar: randomAvatar(i)
+      } as any;
+      setChatFeed(prev => {
+        const merged = [...prev, next];
+        return merged.slice(-50); // cap to last 50
+      });
+    }, 4000 + Math.floor(Math.random() * 3000));
+    return () => clearInterval(interval);
+  }, [users]);
+
+  useEffect(() => {
+    // Auto-scroll to bottom when new messages arrive
+    const el = chatListRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [chatFeed]);
 
   return (
     <>
@@ -46,7 +159,7 @@ export default function Sidebar() {
           isCollapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0"
         } w-80 lg:w-80`}
       >
-        <div className="flex flex-col h-full pt-4">
+        <div className="flex flex-col h-full pt-4 min-h-0">
           {/* Airdrop Section */}
           <div className="p-3">
             <div className="relative bg-black border-2 border-transparent rounded-lg p-3 mb-3">
@@ -70,7 +183,7 @@ export default function Sidebar() {
                     <div className="w-5 h-5 bg-purple-500/20 rounded-full flex items-center justify-center mr-1.5">
                       <span className="text-purple-400 text-xs font-bold">S</span>
                     </div>
-                    <span className="text-white text-base font-bold price-text">0.06</span>
+                    <span className="text-white text-base font-bold price-text">{airdropAmount ?? 0.06}</span>
                   </div>
                   
                   {/* Action button */}
@@ -81,9 +194,7 @@ export default function Sidebar() {
                   </button>
                   
                   {/* Timer */}
-                  <div className="text-gray-300 text-sm font-mono font-bold price-text">
-                    56:29
-                  </div>
+                  <div className="text-gray-300 text-sm font-mono font-bold price-text">{remaining ?? "--:--"}</div>
                 </div>
 
                 {/* Progress bar */}
@@ -95,10 +206,10 @@ export default function Sidebar() {
           </div>
 
           {/* Chat Section */}
-          <div className="flex-1 flex flex-col px-3">
+          <div className="flex-1 flex flex-col px-3 min-h-0">
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
-              {chatMessages.map((msg) => (
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3" ref={chatListRef}>
+              {chatFeed.map((msg) => (
                 <div key={msg.id} className="flex items-start space-x-2 p-2 hover:bg-gray-800/30 rounded-lg transition-colors duration-200">
                   {/* Avatar */}
                   <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center text-sm flex-shrink-0">
@@ -115,25 +226,17 @@ export default function Sidebar() {
                         {msg.level}
                       </span>
                     </div>
-                    <p className="text-gray-300 text-sm">
-                      {msg.message}
-                    </p>
+                    {msg.message && (
+                      <p className="text-gray-300 text-sm">
+                        {msg.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Chat Paused Indicator */}
-            <div className="flex items-center space-x-2 mb-3 p-2 bg-gray-800/50 rounded-lg">
-              <div className="w-1 h-4 bg-gradient-to-b from-orange-400 to-yellow-400 rounded-full"></div>
-              <div className="flex items-center space-x-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="6" y="4" width="4" height="16"/>
-                  <rect x="14" y="4" width="4" height="16"/>
-                </svg>
-                <span className="text-white text-sm font-medium">Chat paused</span>
-              </div>
-            </div>
+            {/* Chat indicator removed; auto messages are generated */}
 
             {/* Chat Input Area */}
             <div className="mb-3">
@@ -147,7 +250,7 @@ export default function Sidebar() {
                 </button>
                 <div className="flex items-center space-x-1">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-white text-sm font-medium">213</span>
+                  <span className="text-white text-sm font-medium">{participants}</span>
                 </div>
               </div>
 

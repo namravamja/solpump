@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rocket Betting Frontend
 
-## Getting Started
+A Next.js frontend for the rocket betting game with real-time WebSocket integration.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Real-time Betting**: Place bets, set auto-cashout, and cashout manually
+- **Live Game State**: Real-time countdown, multiplier updates, and game events
+- **User Management**: Wallet-based authentication with balance tracking
+- **Responsive UI**: Modern betting interface with live player list
+
+## Integration with Backend
+
+The frontend connects to the backend via WebSocket for real-time updates:
+
+### WebSocket Events
+
+#### Client → Server
+- `placeBet` - Place a bet with amount and optional auto-cashout
+- `cashout` - Cashout an active bet
+
+#### Server → Client
+- `gameState` - Initial game state on connection
+- `gameUpdate` - Real-time game updates (countdown, multiplier, etc.)
+- `betResult` - Result of bet placement
+- `cashoutResult` - Result of cashout operation
+
+### Environment Configuration
+
+Create a `.env.local` file in the frontend directory:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Components
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### CenterGame
+Main betting interface with:
+- Bet amount input with quick bet buttons (1/2, 2x, MAX)
+- Auto-cashout setting
+- Place bet / Cashout button
+- Live player list with real-time updates
+- Connection status and user balance
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### RocketEffect
+Rocket animation component that:
+- Receives game state from betting system
+- Shows countdown timer (20s initial + 20s between games)
+- Displays real-time multiplier updates
+- Triggers blast effects on game completion
+- Shows target multiplier and current multiplier
 
-## Learn More
+### useBetting Hook
+Custom hook that manages:
+- WebSocket connection to backend
+- Game state synchronization
+- Bet placement and cashout operations
+- User authentication and balance
+- Real-time updates and error handling
 
-To learn more about Next.js, take a look at the following resources:
+## Game Flow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Connection**: Frontend connects to backend WebSocket
+2. **Initial Countdown**: 20-second countdown before first game
+3. **Betting Phase**: Players place bets during countdown
+4. **Game Start**: Rocket animation begins with real-time multiplier
+5. **Auto-cashout**: Automatic cashout when target reached
+6. **Manual Cashout**: Players can cashout during game
+7. **Game End**: Blast effects, process results, start next countdown
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Usage
 
-## Deploy on Vercel
+1. Start the backend server: `cd backend && npm run dev`
+2. Start the frontend: `cd frontend && npm run dev`
+3. Open http://localhost:3000
+4. Connect wallet (demo mode available)
+5. Place bets and watch the rocket!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Demo Mode
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The frontend includes demo mode for testing without wallet connection. Replace the demo user logic in `CenterGame.tsx` with actual wallet integration.
+
+## Key Features
+
+- **Real-time Updates**: All game state synchronized via WebSocket
+- **Responsive Design**: Works on desktop and mobile
+- **Error Handling**: Comprehensive error messages and validation
+- **Balance Management**: Real-time balance updates
+- **Bet History**: Track user's betting history
+- **Auto-cashout**: Set automatic cashout multipliers
+- **Live Players**: See all active players and their bets

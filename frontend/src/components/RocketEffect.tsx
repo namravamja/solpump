@@ -3,11 +3,11 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import Rocket from "./Rocket/Rocket";
+import { useBettingSimple } from "../hooks/useBettingSimple";
+import { useWalletSimple } from "../hooks/useWalletSimple";
 
 const RocketEffect = () => {
   const [animationKey, setAnimationKey] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(true);
-  const [countdown, setCountdown] = useState(0);
   const [isNearCompletion, setIsNearCompletion] = useState(false);
   const [showBoomEffect, setShowBoomEffect] = useState(false);
   const [showRedFlash, setShowRedFlash] = useState(false);
@@ -16,6 +16,33 @@ const RocketEffect = () => {
   const [rocketRotation, setRocketRotation] = useState(0);
   const rocketRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Get game state from betting system
+  const { gameState, isConnected, refreshGameState } = useBettingSimple();
+  const { isConnected: isWalletConnected, initialized } = useWalletSimple();
+  
+  // Use betting system's game state
+  const countdown = gameState.countdown;
+  const isInitialCountdown = gameState.isInitialCountdown;
+  const isAnimating = gameState.currentGame?.status === 'RUNNING';
+  const currentMultiplier = gameState.currentGame?.current_multiplier || 1.0;
+  const targetMultiplier = gameState.currentGame?.target_multiplier || 0;
+
+  // Debug game state and wallet sync
+  useEffect(() => {
+    console.log('[RocketEffect] State sync update:', {
+      countdown,
+      isInitialCountdown,
+      isAnimating,
+      currentMultiplier,
+      targetMultiplier,
+      currentGame: gameState.currentGame,
+      gameStatus: gameState.currentGame?.status,
+      isGameConnected: isConnected,
+      isWalletConnected,
+      initialized
+    });
+  }, [countdown, isInitialCountdown, isAnimating, currentMultiplier, targetMultiplier, gameState.currentGame, isConnected, isWalletConnected, initialized]);
 
   // Debug state changes
   useEffect(() => {
@@ -26,191 +53,95 @@ const RocketEffect = () => {
     });
   }, [showRedFlash, showBoomEffect, isNearCompletion]);
 
-  // Solpump-style multiplier system - single source of truth
-  const [multiplier, setMultiplier] = useState(1.0);
-  const [targetMultiplier, setTargetMultiplier] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [multiplierInterval, setMultiplierInterval] =
-    useState<NodeJS.Timeout | null>(null);
+  // Use multiplier from betting system
+  const multiplier = currentMultiplier;
 
   useEffect(() => {
     console.log("[v0] RocketEffect component mounted");
     return () => {
       console.log("[v0] RocketEffect component unmounted");
-      // Cleanup multiplier interval on unmount
-      if (multiplierInterval) {
-        clearInterval(multiplierInterval);
-      }
     };
-  }, [multiplierInterval]);
+  }, []);
 
   useEffect(() => {
     console.log("[v0] Animation state changed:", { isAnimating, animationKey });
   }, [isAnimating, animationKey]);
 
-  // Update rocket position based on multiplier - rocket stops at 5.5x
+  // Update rocket position based on multiplier from betting system
   useEffect(() => {
-    if (isAnimating) {
-      // Calculate Y position based on exact multiplier value
-      // Rocket moves directly with multiplier scale but stops at 5.5x
-      const maxYRange = 480; // Maximum Y movement (for 7.00×)
-      const rocketStopMultiplier = 5.5; // Rocket stops at 5.5x
-      const cappedMultiplier = Math.min(multiplier, rocketStopMultiplier); // Cap rocket at 5.5x
-
-      // Direct scale mapping: 1.00× = 0px, 7.00× = -480px
-      const multiplierRange = 7.0 - 1.0; // Range from 1.00 to 7.00
-      const scalePosition = (cappedMultiplier - 1.0) / multiplierRange; // 0-1 scale
-      const newY = -scalePosition * maxYRange; // Direct Y position based on capped multiplier
-
-      // Debug logging to see rocket position
-      if (multiplier > 1.0) {
-        console.log(
-          `[v0] Rocket Position: Multiplier: ${multiplier.toFixed(
-            2
-          )}, Rocket Capped At: ${cappedMultiplier.toFixed(
-            2
-          )}, Target: ${targetMultiplier.toFixed(
-            2
-          )}, Scale: ${scalePosition.toFixed(3)}, Y: ${newY.toFixed(2)} (${(
-            scalePosition * 100
-          ).toFixed(1)}% of max range)`
-        );
-      }
+    if (isAnimating && multiplier > 1.0) {
+      // Calculate Y position based on exact multiplier value (1.00x -> 0px, 7.00x -> -480px)
+      const maxYRange = 480;
+      const clampedMultiplier = Math.min(Math.max(multiplier, 1.0), 7.0);
+      const scalePosition = (clampedMultiplier - 1.0) / (7.0 - 1.0);
+      const newY = -scalePosition * maxYRange;
 
       setRocketY(newY);
 
       // Calculate rotation based on exact multiplier value
-      // Rotation moves directly with multiplier scale but stops at 5.5x
-      const maxRotation = 40; // Maximum rotation (for 7.00×)
-      const newRotation = -scalePosition * maxRotation; // Direct rotation based on capped multiplier
+      const maxRotation = 40; // Maximum rotation at 7.00×
+      const newRotation = -scalePosition * maxRotation;
       setRocketRotation(newRotation);
+    } else if (!isAnimating && gameState.currentGame?.status === 'COUNTDOWN') {
+      // Only reset when countdown starts, not when game completes
+      setRocketY(0);
+      setRocketRotation(0);
     }
-  }, [multiplier, isAnimating, targetMultiplier]);
+  }, [multiplier, isAnimating, gameState.currentGame?.status]);
 
-  // Solpump-style multiplier animation logic - single source of truth
+  // Handle game end events from betting system
   useEffect(() => {
-    console.log("[v0] Animation effect triggered:", {
-      isAnimating,
-      targetMultiplier,
-    });
+    if (gameState.currentGame?.status === 'COMPLETED' && gameState.currentGame.final_multiplier) {
+      console.log("[v0] Game completed with multiplier:", gameState.currentGame.final_multiplier);
 
-    if (!isAnimating || targetMultiplier <= 0) {
-      console.log("[v0] Animation conditions not met:", {
-        isAnimating,
-        targetMultiplier,
-      });
-      return;
-    }
-
-    console.log("[v0] Starting animation with target:", targetMultiplier);
-    let startTime = performance.now();
-    const initialDelay = 3000; // 3 seconds delay at 1.00× position
-    const fixedSpeed = 0.1; // Fixed speed: 0.1× per second (independent of target)
-
-    const animate = (time: number) => {
-      const elapsed = time - startTime;
-
-      if (elapsed <= initialDelay) {
-        // Stay at 1.00× for initial delay
-        setMultiplier(1.0);
-        setProgress(0);
-        console.log("[v0] Animation delay phase:", elapsed.toFixed(0) + "ms");
-        requestAnimationFrame(animate);
-      } else {
-        // Calculate multiplier with fixed speed (independent of target)
-        const animationElapsed = elapsed - initialDelay;
-        const secondsElapsed = animationElapsed / 1000; // Convert to seconds
-        const value = 1.0 + fixedSpeed * secondsElapsed; // Fixed speed progression
-
-        // Cap at target multiplier
-        const cappedValue = Math.min(value, targetMultiplier);
-
-        setMultiplier(parseFloat(cappedValue.toFixed(2)));
-
-        // Calculate progress for rocket movement (0-1 based on target)
-        const progress = Math.min(
-          1,
-          (cappedValue - 1.0) / (targetMultiplier - 1.0)
-        );
-        setProgress(progress);
-
-        // Log progress every 5 seconds to avoid spam
-        if (Math.floor(elapsed / 5000) !== Math.floor((elapsed - 16) / 5000)) {
-          console.log("[v0] Animation progress:", {
-            elapsed: elapsed.toFixed(0) + "ms",
-            seconds: secondsElapsed.toFixed(1) + "s",
-            multiplier: cappedValue.toFixed(2),
-            progress: progress.toFixed(3),
-            speed: fixedSpeed + "×/s",
+      // Get the current rocket position for blast effect
+      if (rocketRef.current) {
+        const rect = rocketRef.current.getBoundingClientRect();
+        const containerRect = rocketRef.current.parentElement?.getBoundingClientRect();
+        if (containerRect) {
+          const relativeX = rect.left - containerRect.left;
+          const relativeY = rect.top - containerRect.top;
+          setRocketPosition({ x: relativeX, y: relativeY });
+          console.log("[v0] Rocket position captured for blast:", {
+            x: relativeX,
+            y: relativeY,
           });
         }
-
-        if (value < targetMultiplier) {
-          requestAnimationFrame(animate);
-        } else {
-          // Trigger blast effect when target is reached
-          console.log("[v0] Multiplier reached target:", targetMultiplier);
-
-          // Get the current rocket position for blast effect
-          if (rocketRef.current) {
-            const rect = rocketRef.current.getBoundingClientRect();
-            const containerRect =
-              rocketRef.current.parentElement?.getBoundingClientRect();
-            if (containerRect) {
-              const relativeX = rect.left - containerRect.left;
-              const relativeY = rect.top - containerRect.top;
-              setRocketPosition({ x: relativeX, y: relativeY });
-              console.log("[v0] Rocket position captured for blast:", {
-                x: relativeX,
-                y: relativeY,
-              });
-            }
-          }
-
-          // Show blast effects immediately
-          console.log("[v0] Triggering blast effects");
-          setIsNearCompletion(true);
-          setShowRedFlash(true);
-          setShowBoomEffect(true);
-
-          // Hide red flash after 1.3 seconds while boom video continues
-          setTimeout(() => {
-            console.log("[v0] Hiding red flash");
-            setShowRedFlash(false);
-          }, 1300);
-
-          // Stop animation after blast
-          setIsAnimating(false);
-        }
       }
-    };
 
-    requestAnimationFrame(animate);
-  }, [isAnimating, targetMultiplier]);
+      // Show blast effects immediately
+      console.log("[v0] Triggering blast effects");
+      setIsNearCompletion(true);
+      setShowRedFlash(true);
+      setShowBoomEffect(true);
 
-  // Initialize random target multiplier when component mounts
+      // Hide red flash after 1.3 seconds while boom video continues
+      setTimeout(() => {
+        console.log("[v0] Hiding red flash");
+        setShowRedFlash(false);
+      }, 1300);
+
+      // Reset effects and rocket after 1 second
+      setTimeout(() => {
+        console.log("[v0] Resetting rocket and effects for new game");
+        setIsNearCompletion(false);
+        setShowBoomEffect(false);
+        setShowRedFlash(false);
+        // Reset rocket position immediately
+        setRocketY(0);
+        setRocketRotation(0);
+        // Force animation key update to restart rocket animation
+        setAnimationKey((prev) => prev + 1);
+      }, 1000);
+    }
+  }, [gameState.currentGame?.status, gameState.currentGame?.final_multiplier]);
+
+  // Initialize component
   useEffect(() => {
-    console.log("[v0] Component mounted, setting initial target");
-    const randomTarget = Math.random() * 24 + 1; // Random between 1-24
-    setTargetMultiplier(parseFloat(randomTarget.toFixed(2)));
-    setMultiplier(1.0);
-    setProgress(0);
+    console.log("[v0] RocketEffect component initialized with betting system");
     setRocketY(0);
     setRocketRotation(0);
-    console.log("[v0] Initial target multiplier:", randomTarget.toFixed(2));
-
-    // Force animation to start immediately
-    setTimeout(() => {
-      console.log("[v0] Forcing animation start after 100ms");
-    }, 100);
   }, []); // Run once on mount
-
-  // Start animation immediately when target is set
-  useEffect(() => {
-    if (isAnimating && targetMultiplier > 0) {
-      console.log("[v0] Starting animation with target:", targetMultiplier);
-    }
-  }, [isAnimating, targetMultiplier]);
 
   // Handle video playback issues and power saving interruptions
   useEffect(() => {
@@ -286,68 +217,54 @@ const RocketEffect = () => {
     { value: "0.00x", isMajor: true },
   ];
 
-  // Handle animation completion and restart logic
+  // Reset rocket position when new game starts
   useEffect(() => {
-    if (!isAnimating) {
-      console.log("[v0] Starting countdown");
-      // Delay resetting effects to allow them to show
-      setTimeout(() => {
-        // Reset near completion state and boom effect
-        setIsNearCompletion(false);
-        setShowBoomEffect(false);
-        setShowRedFlash(false);
-      }, 2000); // Wait 2 seconds before resetting effects
-      // Start 5-second countdown
-      setCountdown(5);
-      const countdownInterval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            console.log("[v0] Restarting animation");
-            // Generate new random target for each game
-            const newRandomTarget = Math.random() * 24 + 1; // Random between 1-24
-            setTargetMultiplier(parseFloat(newRandomTarget.toFixed(2)));
-            console.log(
-              "[v0] New target multiplier:",
-              newRandomTarget.toFixed(2)
-            );
-            // Reset multiplier system for new animation
-            setMultiplier(1.0);
-            if (multiplierInterval) {
-              clearInterval(multiplierInterval);
-              setMultiplierInterval(null);
-            }
-            // Force reset rocket position to starting position
-            setTimeout(() => {
-              setMultiplier(1.0);
-              setProgress(0);
-              setRocketY(0);
-              setRocketRotation(0);
-            }, 50);
-            // Restart animation
-            setAnimationKey((prev) => prev + 1);
-            setIsAnimating(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(countdownInterval);
+    if (gameState.currentGame?.status === 'COUNTDOWN') {
+      console.log("[v0] New countdown started, resetting rocket");
+      setRocketY(0);
+      setRocketRotation(0);
+      setAnimationKey((prev) => prev + 1);
+      // Reset all animation states
+      setIsNearCompletion(false);
+      setShowBoomEffect(false);
+      setShowRedFlash(false);
     }
-  }, [isAnimating]);
+  }, [gameState.currentGame?.id, gameState.currentGame?.status]);
 
-  // Handle animation completion
-  const handleAnimationComplete = () => {
-    console.log("[v0] Animation completed");
-    setIsAnimating(false);
-  };
+  // Ensure rocket is hidden during countdown
+  useEffect(() => {
+    if (gameState.currentGame?.status === 'COUNTDOWN' && countdown > 0) {
+      // Hide rocket during countdown
+      setRocketY(0);
+      setRocketRotation(0);
+    }
+  }, [gameState.currentGame?.status, countdown]);
+
+  // Auto-refresh game state if no current game after wallet is connected
+  useEffect(() => {
+    if (initialized && isWalletConnected && isConnected && !gameState.currentGame) {
+      console.log('🔄 No current game detected, refreshing...');
+      const timer = setTimeout(() => {
+        refreshGameState();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [initialized, isWalletConnected, isConnected, gameState.currentGame, refreshGameState]);
+
+  // Show loading state while wallet is initializing
+  if (!initialized) {
+    return (
+      <div className="relative h-full w-full flex justify-center items-center">
+        <div className="text-gray-400 text-sm">Loading game...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative h-full w-full flex justify-center items-start">
+    <div className="relative w-full h-[78vh] min-h-[78vh] flex justify-center items-start flex-none">
       <div
         ref={containerRef}
-        className="relative w-[96%] h-[83%] border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible"
+        className="relative w-[96%] h-full shrink-0 border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible"
       >
         {/* Background Video */}
         <video
@@ -391,37 +308,7 @@ const RocketEffect = () => {
         {/* Transparent overlay */}
         <div className="absolute inset-0 bg-transparent pointer-events-none z-[5]" />
 
-        {/* Random Target Value Display - Left Side */}
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-[6] pointer-events-none">
-          <div className="backdrop-blur-sm rounded-2xl px-6 py-4 bg-black/20 border border-gray-600/30">
-            <div className="text-center space-y-2">
-              {/* Target Label */}
-              <div className="text-gray-400 text-lg font-medium tracking-[0.2em] uppercase italic">
-                Target
-              </div>
-
-              {/* Target Value with Metallic Gradient */}
-              <div className="relative">
-                <div
-                  className="text-4xl font-black tracking-tight font-mono"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 15%, #8a8a8a 50%, #e0e0e0 85%, #f5f5f5 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    textShadow:
-                      "0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.6)",
-                    filter:
-                      "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1))",
-                  }}
-                >
-                  {targetMultiplier.toFixed(2)}x
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Scale markers on the right - original static version */}
         <div className="absolute right-4 top-0 bottom-0 flex flex-col justify-between py-4 z-[6] pointer-events-none">
@@ -445,8 +332,9 @@ const RocketEffect = () => {
           ))}
         </div>
 
+
         {/* Live Multiplier Display - Centered */}
-        {countdown === 0 && (
+        {countdown === 0 && !isInitialCountdown && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[6] pointer-events-none">
             <div className="backdrop-blur-sm rounded-3xl px-8 py-6 mb-36">
               <div className="text-center space-y-2">
@@ -471,7 +359,7 @@ const RocketEffect = () => {
                         "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1))",
                     }}
                   >
-                    {multiplier.toFixed(2)}x
+                    {currentMultiplier.toFixed(2)}x
                   </div>
                 </div>
               </div>
@@ -492,7 +380,7 @@ const RocketEffect = () => {
         )}
 
         {/* Countdown Timer Display */}
-        {countdown > 0 && (
+        {(countdown > 0 || (gameState.currentGame?.status === 'COUNTDOWN' && countdown >= 0)) && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
             {/* Ring effect - multiple expanding circles */}
             <div
@@ -520,9 +408,9 @@ const RocketEffect = () => {
               }}
             >
               <div className="text-center space-y-2">
-                {/* New Ride Label */}
+                {/* Countdown Label */}
                 <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
-                  New Ride
+                  {isInitialCountdown ? "Game Starting" : "New Ride"}
                 </div>
 
                 {/* Countdown Value with Metallic Gradient */}
@@ -541,7 +429,7 @@ const RocketEffect = () => {
                         "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.1))",
                     }}
                   >
-                    {countdown}
+                    {countdown > 0 ? countdown : '0'}
                   </div>
                 </div>
 
@@ -627,7 +515,7 @@ const RocketEffect = () => {
           }}
           initial={{ x: "-150px", y: 0, rotate: 0, opacity: 1 }}
           animate={
-            isAnimating
+            isAnimating && gameState.currentGame?.status === 'RUNNING'
               ? {
                   x: "calc(60vw - 80px)",
                   y: rocketY,
@@ -637,7 +525,7 @@ const RocketEffect = () => {
               : { x: "-150px", y: 0, rotate: 0, opacity: 0 }
           }
           transition={
-            isAnimating
+            isAnimating && gameState.currentGame?.status === 'RUNNING'
               ? {
                   x: {
                     duration: 40,
