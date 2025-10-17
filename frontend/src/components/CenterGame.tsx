@@ -237,11 +237,11 @@ export default function CenterGame() {
   }
 
   return (
-    <div className="flex-1 flex bg-black min-h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col lg:flex-row bg-black min-h-screen overflow-hidden">
       {/* Left Panel - Bet Controls */}
-      <div className="w-64 bg-gray-900/90 backdrop-blur-sm border-r border-gray-800 flex flex-col overflow-hidden h-3/4 mt-4">
+      <div className="w-full lg:w-64 bg-gray-900/90 backdrop-blur-sm border-r border-gray-800 flex flex-col overflow-hidden lg:h-3/4 mt-4 order-2 lg:order-1">
         {/* Bet Amount Section */}
-        <div className="p-5 border-b border-gray-800">
+        <div className="p-3 lg:p-5 border-b border-gray-800">
           {/* Connection Status */}
           <div className="mb-3">
             {gameState.countdown > 0 &&
@@ -435,7 +435,7 @@ export default function CenterGame() {
         </div>
 
         {/* Players Section */}
-        <div className="flex-1 p-5 overflow-y-auto">
+        <div className="flex-1 p-3 lg:p-5 overflow-y-auto">
           <div className="mb-4">
             <div className="text-gray-300 text-xs mb-1">
               <span className="font-bold text-white">
@@ -593,7 +593,7 @@ export default function CenterGame() {
       </div>
 
       {/* Center Game Area */}
-      <div className="flex-1 relative bg-gradient-to-br from-purple-900/20 via-black to-black overflow-hidden pt-6 mt-4">
+      <div className="flex-1 relative bg-gradient-to-br from-purple-900/20 via-black to-black overflow-hidden pt-4 lg:pt-6 mt-4 order-1 lg:order-2">
         {/* 3D Grid Background */}
         <div className="absolute inset-0 opacity-20 overflow-hidden">
           <div

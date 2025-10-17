@@ -126,10 +126,10 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-full max-w-md rounded-2xl glass p-6 text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-2xl glass p-4 lg:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Connect Wallet to Play</h2>
+          <h2 className="text-lg lg:text-xl font-bold">Connect Wallet to Play</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
         </div>
 

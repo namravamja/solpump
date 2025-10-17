@@ -14,6 +14,25 @@ body {
   overflow-x: hidden;
 }
 
+/* Responsive typography */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  body {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1025px) {
+  body {
+    font-size: 16px;
+  }
+}
+
 /* Prevent white background on scroll */
 html {
   background-color: #000000;
@@ -55,6 +74,29 @@ html {
   }
   100% {
     transform: translateX(calc(60vw - 80px));
+  }
+}
+
+/* Responsive rocket animation */
+@media (max-width: 640px) {
+  @keyframes rocketMove {
+    0% {
+      transform: translateX(-100px);
+    }
+    100% {
+      transform: translateX(calc(50vw - 40px));
+    }
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  @keyframes rocketMove {
+    0% {
+      transform: translateX(-120px);
+    }
+    100% {
+      transform: translateX(calc(55vw - 60px));
+    }
   }
 }
 
@@ -327,5 +369,181 @@ html {
   100% {
     transform: scale(2);
     opacity: 0;
+  }
+}
+
+/* Responsive utility classes */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+  
+  .mobile-full {
+    width: 100% !important;
+  }
+  
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+  }
+  
+  .mobile-text-xs {
+    font-size: 0.75rem !important;
+  }
+  
+  .mobile-p-2 {
+    padding: 0.5rem !important;
+  }
+  
+  .mobile-p-3 {
+    padding: 0.75rem !important;
+  }
+  
+  .mobile-gap-2 {
+    gap: 0.5rem !important;
+  }
+  
+  .mobile-flex-col {
+    flex-direction: column !important;
+  }
+  
+  .mobile-space-y-2 > * + * {
+    margin-top: 0.5rem !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-hidden {
+    display: none !important;
+  }
+  
+  .tablet-text-base {
+    font-size: 1rem !important;
+  }
+  
+  .tablet-p-4 {
+    padding: 1rem !important;
+  }
+}
+
+/* Mobile-first responsive containers */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    padding: 0 2rem;
+  }
+}
+
+/* Responsive grid layouts */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Responsive sidebar */
+@media (max-width: 1024px) {
+  .sidebar-mobile {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100vh;
+    z-index: 50;
+    transition: left 0.3s ease-in-out;
+  }
+  
+  .sidebar-mobile.open {
+    left: 0;
+  }
+}
+
+/* Responsive navbar */
+@media (max-width: 768px) {
+  .navbar-mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .navbar-mobile .nav-items {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  
+  .navbar-mobile .nav-item {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Responsive game area */
+@media (max-width: 1024px) {
+  .game-area-mobile {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .game-area-mobile .bet-panel {
+    width: 100%;
+    max-width: none;
+    position: relative;
+    height: auto;
+    min-height: 300px;
+  }
+  
+  .game-area-mobile .center-game {
+    width: 100%;
+    height: 60vh;
+    min-height: 400px;
+  }
+}
+
+/* Responsive rocket effect */
+@media (max-width: 640px) {
+  .rocket-mobile {
+    scale: 0.7;
+  }
+  
+  .rocket-container-mobile {
+    height: 50vh;
+    min-height: 300px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .rocket-tablet {
+    scale: 0.85;
+  }
+  
+  .rocket-container-tablet {
+    height: 65vh;
+    min-height: 400px;
   }
 }

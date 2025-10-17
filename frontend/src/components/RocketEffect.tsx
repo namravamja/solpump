@@ -261,10 +261,10 @@ const RocketEffect = () => {
   }
 
   return (
-    <div className="relative w-full h-[78vh] min-h-[78vh] flex justify-center items-start flex-none">
+    <div className="relative w-full h-[50vh] lg:h-[78vh] min-h-[50vh] lg:min-h-[78vh] flex justify-center items-start flex-none">
       <div
         ref={containerRef}
-        className="relative w-[96%] h-full shrink-0 border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible"
+        className="relative w-[95%] lg:w-[96%] h-full shrink-0 border-2 lg:border-4 border-gray-800 rounded-lg shadow-lg p-0 overflow-visible"
       >
         {/* Background Video */}
         <video
@@ -311,19 +311,19 @@ const RocketEffect = () => {
         
 
         {/* Scale markers on the right - original static version */}
-        <div className="absolute right-4 top-0 bottom-0 flex flex-col justify-between py-4 z-[6] pointer-events-none">
+        <div className="absolute right-2 lg:right-4 top-0 bottom-0 flex flex-col justify-between py-2 lg:py-4 z-[6] pointer-events-none">
           {scaleValues.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={index} className="flex items-center gap-1 lg:gap-2">
               <div
                 className={`h-[1px] bg-gray-400/60 ${
-                  item.isMajor ? "w-4" : "w-2"
+                  item.isMajor ? "w-2 lg:w-4" : "w-1 lg:w-2"
                 }`}
               />
               <span
                 className={`font-mono tracking-wider ${
                   item.isMajor
-                    ? "text-gray-300/80 text-sm"
-                    : "text-gray-400/60 text-xs"
+                    ? "text-gray-300/80 text-xs lg:text-sm"
+                    : "text-gray-400/60 text-[10px] lg:text-xs"
                 }`}
               >
                 {item.value}
@@ -336,17 +336,17 @@ const RocketEffect = () => {
         {/* Live Multiplier Display - Centered - show only when game is RUNNING */}
         {gameState.currentGame?.status === 'RUNNING' && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[6] pointer-events-none">
-            <div className="backdrop-blur-sm rounded-3xl px-8 py-6 mb-36">
-              <div className="text-center space-y-2">
+            <div className="backdrop-blur-sm rounded-2xl lg:rounded-3xl px-4 lg:px-8 py-4 lg:py-6 mb-20 lg:mb-36">
+              <div className="text-center space-y-1 lg:space-y-2">
                 {/* Current Payout Label */}
-                <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
+                <div className="text-gray-400 text-sm lg:text-xl font-medium tracking-[0.2em] uppercase italic">
                   Current Payout
                 </div>
 
                 {/* Multiplier Value with Metallic Gradient */}
                 <div className="relative">
                   <div
-                    className="text-8xl font-black tracking-tight font-mono"
+                    className="text-4xl lg:text-8xl font-black tracking-tight font-mono"
                     style={{
                       background:
                         "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 15%, #8a8a8a 50%, #e0e0e0 85%, #f5f5f5 100%)",
@@ -384,21 +384,21 @@ const RocketEffect = () => {
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
             {/* Ring effect - multiple expanding circles */}
             <div
-              className="absolute w-48 h-48 rounded-full border-2 border-purple-400/30"
+              className="absolute w-32 h-32 lg:w-48 lg:h-48 rounded-full border-2 border-purple-400/30"
               style={{ animation: "slowRing 3s ease-out infinite" }}
             ></div>
             <div
-              className="absolute w-48 h-48 rounded-full border-2 border-purple-400/20"
+              className="absolute w-32 h-32 lg:w-48 lg:h-48 rounded-full border-2 border-purple-400/20"
               style={{ animation: "slowRing 3s ease-out infinite 1s" }}
             ></div>
             <div
-              className="absolute w-48 h-48 rounded-full border-2 border-purple-400/10"
+              className="absolute w-32 h-32 lg:w-48 lg:h-48 rounded-full border-2 border-purple-400/10"
               style={{ animation: "slowRing 2s ease-out infinite 2s" }}
             ></div>
 
             {/* Main countdown circle */}
             <div
-              className="w-48 h-48 backdrop-blur-sm rounded-full border-purple-400/30 flex flex-col items-center justify-center shadow-2xl relative z-10"
+              className="w-32 h-32 lg:w-48 lg:h-48 backdrop-blur-sm rounded-full border-purple-400/30 flex flex-col items-center justify-center shadow-2xl relative z-10"
               style={{
                 background:
                   "linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 50%, rgba(0,0,0,0.8) 100%)",
@@ -407,16 +407,16 @@ const RocketEffect = () => {
                   "0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
               }}
             >
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-1 lg:space-y-2">
                 {/* Countdown Label */}
-                <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
+                <div className="text-gray-400 text-sm lg:text-xl font-medium tracking-[0.2em] uppercase italic">
                   {isInitialCountdown ? "Game Starting" : "New Ride"}
                 </div>
 
                 {/* Countdown Value with Metallic Gradient */}
                 <div className="relative">
                   <div
-                    className="text-8xl font-black tracking-tight font-mono"
+                    className="text-4xl lg:text-8xl font-black tracking-tight font-mono"
                     style={{
                       background:
                         "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 15%, #8a8a8a 50%, #e0e0e0 85%, #f5f5f5 100%)",
@@ -434,7 +434,7 @@ const RocketEffect = () => {
                 </div>
 
                 {/* Starting In Label */}
-                <div className="text-gray-400 text-xl font-medium tracking-[0.2em] uppercase italic">
+                <div className="text-gray-400 text-sm lg:text-xl font-medium tracking-[0.2em] uppercase italic">
                   Starting In
                 </div>
               </div>

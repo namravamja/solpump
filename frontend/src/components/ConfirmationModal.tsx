@@ -67,19 +67,19 @@ export default function ConfirmationModal({
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
-          className={`relative w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-800 to-black border ${styles.border} rounded-2xl shadow-2xl backdrop-blur-sm`}
+          className={`relative w-full max-w-sm lg:max-w-md bg-gradient-to-br from-gray-900 via-gray-800 to-black border ${styles.border} rounded-2xl shadow-2xl backdrop-blur-sm`}
         >
           {/* Header */}
-          <div className="p-6 pb-4">
+          <div className="p-4 lg:p-6 pb-4">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="text-2xl">{styles.icon}</div>
-              <h3 className="text-xl font-bold text-white">{title}</h3>
+              <div className="text-xl lg:text-2xl">{styles.icon}</div>
+              <h3 className="text-lg lg:text-xl font-bold text-white">{title}</h3>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">{message}</p>
           </div>
 
           {/* Actions */}
-          <div className="p-6 pt-4 flex space-x-3">
+          <div className="p-4 lg:p-6 pt-4 flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-3">
             <button
               onClick={onClose}
               disabled={isLoading}

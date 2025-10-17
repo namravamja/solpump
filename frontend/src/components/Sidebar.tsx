@@ -167,7 +167,7 @@ export default function Sidebar() {
       {/* Mobile toggle button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="lg:hidden fixed top-20 left-4 z-50 bg-gray-800 text-white p-2 rounded-lg"
+        className="lg:hidden fixed top-16 left-4 z-50 bg-gray-800 text-white p-2 rounded-lg"
       >
         ☰
       </button>
@@ -176,7 +176,7 @@ export default function Sidebar() {
       <div
         className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-gradient-to-b from-[#0a0a0f] via-gray-900 to-black border-r border-purple-500/20 transition-transform duration-300 z-40 backdrop-blur-sm ${
           isCollapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0"
-        } w-80 lg:w-80`}
+        } w-full lg:w-80`}
       >
         <div className="flex flex-col h-full pt-4 min-h-0">
           {/* Airdrop Section */}

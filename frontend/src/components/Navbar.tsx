@@ -69,10 +69,10 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-black border-b border-gray-800">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex flex-col lg:flex-row items-center justify-between px-4 lg:px-6 py-3 lg:py-4 gap-3 lg:gap-0">
         {/* Logo */}
         <div className="flex items-center">
-          <div className="text-4xl font-bold tracking-wider font-sans">
+          <div className="text-2xl lg:text-4xl font-bold tracking-wider font-sans">
             <span className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
               SOL
             </span>
@@ -83,68 +83,68 @@ export default function Navbar() {
         </div>
 
         {/* Navigation Items - positioned close to logo */}
-        <div className="flex items-center space-x-6 ml-8">
+        <div className="flex items-center space-x-3 lg:space-x-6 lg:ml-8">
           {/* Crash - Active */}
           <button
             onClick={() => setActiveTab("crash")}
-            className="flex items-center space-x-3 px-4 py-2 transition-all duration-300"
+            className="flex items-center space-x-2 lg:space-x-3 px-2 lg:px-4 py-2 transition-all duration-300"
           >
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
               <TrendingUpIcon />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-white font-medium text-base font-sans">Crash</span>
-              <span className="text-purple-400 text-sm font-bold price-text">2.00x</span>
+              <span className="text-white font-medium text-sm lg:text-base font-sans">Crash</span>
+              <span className="text-purple-400 text-xs lg:text-sm font-bold price-text">2.00x</span>
             </div>
           </button>
 
           {/* Coinflip - Inactive */}
           <button
             onClick={() => setActiveTab("coinflip")}
-            className="flex items-center space-x-3 px-4 py-2 transition-all duration-300"
+            className="flex items-center space-x-2 lg:space-x-3 px-2 lg:px-4 py-2 transition-all duration-300"
           >
-            <div className="w-10 h-10 rounded-lg bg-gray-600 flex items-center justify-center">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-gray-600 flex items-center justify-center">
               <CoinsIcon />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-gray-400 font-medium text-base font-sans">Coinflip</span>
-              <span className="text-gray-400 text-sm price-text">17 Flips</span>
+              <span className="text-gray-400 font-medium text-sm lg:text-base font-sans">Coinflip</span>
+              <span className="text-gray-400 text-xs lg:text-sm price-text">17 Flips</span>
             </div>
           </button>
 
           {/* Futures - Inactive */}
           <button
             onClick={() => setActiveTab("futures")}
-            className="flex items-center space-x-3 px-4 py-2 transition-all duration-300"
+            className="flex items-center space-x-2 lg:space-x-3 px-2 lg:px-4 py-2 transition-all duration-300"
           >
-            <div className="w-10 h-10 rounded-lg bg-gray-600 flex items-center justify-center">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-gray-600 flex items-center justify-center">
               <BarChartIcon />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-gray-400 font-medium text-base font-sans">Futures</span>
-              <span className="text-gray-400 text-sm font-sans">Coming soon</span>
+              <span className="text-gray-400 font-medium text-sm lg:text-base font-sans">Futures</span>
+              <span className="text-gray-400 text-xs lg:text-sm font-sans">Coming soon</span>
             </div>
           </button>
         </div>
 
         {/* Player Profile / Connect Button */}
-        <div className="ml-auto">
+        <div className="w-full lg:w-auto lg:ml-auto">
           {!initialized ? (
             <div className="text-gray-400 text-sm">Loading...</div>
           ) : isWalletConnected && walletInfo ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col lg:flex-row items-center space-y-2 lg:space-y-0 lg:space-x-4">
               {/* Player Profile */}
-              <div className="flex items-center space-x-3 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm border border-gray-600/30 rounded-xl px-4 py-3">
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm border border-gray-600/30 rounded-xl px-3 lg:px-4 py-2 lg:py-3 w-full lg:w-auto">
                 {/* Avatar */}
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
+                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs lg:text-sm">
                     {walletInfo.name?.charAt(0)?.toUpperCase() || 'D'}
                   </span>
                 </div>
                 
                 {/* Player Info */}
                 <div className="flex flex-col">
-                  <div className="text-white font-semibold text-sm">{walletInfo.name || 'DemoPlayer'}</div>
+                  <div className="text-white font-semibold text-xs lg:text-sm">{walletInfo.name || 'DemoPlayer'}</div>
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                     <span className="text-green-400 text-xs font-medium">Wallet Connected</span>
@@ -152,8 +152,8 @@ export default function Navbar() {
                 </div>
                 
                 {/* Balance */}
-                <div className="bg-black/30 border border-gray-600/50 rounded-lg px-3 py-2">
-                  <div className="text-white font-mono text-sm font-bold">
+                <div className="bg-black/30 border border-gray-600/50 rounded-lg px-2 lg:px-3 py-1 lg:py-2">
+                  <div className="text-white font-mono text-xs lg:text-sm font-bold">
                     {Number(walletInfo.balance).toLocaleString()} credits
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export default function Navbar() {
                   document.cookie = 'user_balance=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
                   // Clear all user data
                 }}
-                className="bg-red-600/80 hover:bg-red-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-red-500/25 border border-red-500/30 hover:border-red-400/50"
+                className="w-full lg:w-auto bg-red-600/80 hover:bg-red-500 text-white px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-red-500/25 border border-red-500/30 hover:border-red-400/50"
               >
                 Disconnect
               </button>
@@ -181,10 +181,10 @@ export default function Navbar() {
           ) : (
             <button
               onClick={() => setLoginOpen(true)}
-              className="group relative bg-green-600 hover:bg-green-500 border border-green-500 hover:border-green-400 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20 font-sans flex items-center space-x-2"
+              className="w-full lg:w-auto group relative bg-green-600 hover:bg-green-500 border border-green-500 hover:border-green-400 text-white px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20 font-sans flex items-center justify-center space-x-2"
             >
               <WalletIcon />
-              <span>Connect Wallet</span>
+              <span className="text-sm lg:text-base">Connect Wallet</span>
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-green-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
           )}
