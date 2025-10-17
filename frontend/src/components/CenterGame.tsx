@@ -252,14 +252,18 @@ export default function CenterGame() {
               )}
           </div>
 
-          {/* Wallet Connection */}
+          {/* Wallet Connection (show when not connected OR countdown is active but wallet not yet ready) */}
           {!isWalletConnected && (
             <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-500/30 rounded">
               <div className="text-xs text-yellow-300 mb-2">
                 Connect Wallet to Place Bets
               </div>
               <button
-                onClick={connectWallet}
+                onClick={() => {
+                  // Prefer opening the profile + wallet modal flow if available
+                  const ev = new Event("open-wallet-modal");
+                  window.dispatchEvent(ev);
+                }}
                 disabled={isConnecting}
                 className="w-full bg-gradient-to-r from-yellow-600 via-yellow-700 to-orange-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-orange-500 text-white font-bold text-sm py-2 rounded transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >

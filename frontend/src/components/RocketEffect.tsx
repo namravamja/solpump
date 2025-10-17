@@ -333,8 +333,8 @@ const RocketEffect = () => {
         </div>
 
 
-        {/* Live Multiplier Display - Centered */}
-        {countdown === 0 && !isInitialCountdown && (
+        {/* Live Multiplier Display - Centered - show only when game is RUNNING */}
+        {gameState.currentGame?.status === 'RUNNING' && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[6] pointer-events-none">
             <div className="backdrop-blur-sm rounded-3xl px-8 py-6 mb-36">
               <div className="text-center space-y-2">
@@ -379,8 +379,8 @@ const RocketEffect = () => {
           </div>
         )}
 
-        {/* Countdown Timer Display */}
-        {(countdown > 0 || (gameState.currentGame?.status === 'COUNTDOWN' && countdown >= 0)) && (
+        {/* Countdown Timer Display - only during COUNTDOWN state */}
+        {gameState.currentGame?.status === 'COUNTDOWN' && countdown >= 0 && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
             {/* Ring effect - multiple expanding circles */}
             <div

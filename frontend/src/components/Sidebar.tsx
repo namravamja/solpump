@@ -3,23 +3,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "../hooks/UserContext";
 
-const chatMessages = [
+type Message = {
+  id: string;
+  username: string;
+  level: string;
+  message: string;
+  avatar: string;
+};
+
+const chatMessages: Message[] = [
   {
-    id: 1,
+    id: "1",
     username: "DaddyDSW",
     level: "13",
     message: "😮",
     avatar: "🦜",
   },
   {
-    id: 2,
+    id: "2",
     username: "payday",
     level: "8",
     message: "Why are you talking to yourself",
     avatar: "👨‍🚀",
   },
   {
-    id: 3,
+    id: "3",
     username: "Ricardo",
     level: "20",
     message: "can someone tip me 0.005 for fee?",
@@ -82,14 +90,25 @@ export default function Sidebar() {
     return `${m}:${s}`;
   }, [endsAt, now]);
 
-  const messages = useMemo(() => {
+  const messages: Message[] = useMemo(() => {
     if (!user && users.length === 0) return chatMessages;
-    const rows = (user ? [{ id: 'me', username: user.name, level: "1", message: "", avatar: "👤" }] : [])
-      .concat(users.filter(u => !user || u.name !== user.name).slice(0, 10).map((u, i) => ({ id: u.id ?? i, username: u.name, level: String(1 + (i % 20)), message: "", avatar: i % 2 ? "👨‍🚀" : "🦜" })));
+    const rows: Message[] = (user ? [{ id: 'me', username: user.name, level: "1", message: "", avatar: "👤" }] : [])
+      .concat(
+        users
+          .filter(u => !user || u.name !== user.name)
+          .slice(0, 10)
+          .map((u, i) => ({
+            id: String(u.id ?? i),
+            username: u.name,
+            level: String(1 + (i % 20)),
+            message: "",
+            avatar: i % 2 ? "👨‍🚀" : "🦜",
+          }))
+      );
     return rows;
   }, [user, users]);
 
-  const [chatFeed, setChatFeed] = useState(messages);
+  const [chatFeed, setChatFeed] = useState<Message[]>(messages);
   const feedInit = useRef(false);
   const chatListRef = useRef<HTMLDivElement | null>(null);
 
@@ -121,13 +140,13 @@ export default function Sidebar() {
       const pool = users.length ? users : [{ name: "Guest" } as any];
       const pick = pool[Math.floor(Math.random() * pool.length)];
       const text = phrases[Math.floor(Math.random() * phrases.length)];
-      const next = {
+      const next: Message = {
         id: `auto-${Date.now()}`,
         username: pick.name,
         level: String(1 + ((i++) % 20)),
         message: text,
         avatar: randomAvatar(i)
-      } as any;
+      };
       setChatFeed(prev => {
         const merged = [...prev, next];
         return merged.slice(-50); // cap to last 50

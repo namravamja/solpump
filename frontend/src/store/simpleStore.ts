@@ -17,7 +17,7 @@ class SimpleStore {
 
   subscribe(listener: () => void) {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => { this.listeners.delete(listener); };
   }
 
   private notifyListeners() {

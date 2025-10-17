@@ -66,16 +66,24 @@ export const useBettingSimple = () => {
           console.log('🎮 Countdown update:', update.data);
           console.log('🎮 Countdown value:', update.data.countdown);
           console.log('🎮 Is initial:', update.data.isInitial);
-          gameActions.updateGameState({
-            countdown: update.data.countdown,
-            isInitialCountdown: update.data.isInitial
-          });
+          {
+            const currentState = store.getState();
+            const currentGame = currentState.game.gameState.currentGame
+              ? { ...currentState.game.gameState.currentGame, status: 'COUNTDOWN' as const }
+              : null;
+            gameActions.updateGameState({
+              countdown: update.data.countdown,
+              isInitialCountdown: update.data.isInitial,
+              currentGame,
+            });
+          }
           break;
         case 'GAME_START':
           console.log('🎮 Game started with data:', update.data);
           gameActions.updateGameState({
             currentGame: update.data,
-            countdown: 0
+            countdown: 0,
+            isInitialCountdown: false
           });
           break;
         case 'MULTIPLIER_UPDATE':
