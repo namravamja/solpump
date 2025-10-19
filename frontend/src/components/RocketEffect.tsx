@@ -14,6 +14,8 @@ const RocketEffect = () => {
   const [rocketPosition, setRocketPosition] = useState({ x: 0, y: 0 });
   const [rocketY, setRocketY] = useState(0);
   const [rocketRotation, setRocketRotation] = useState(0);
+  const [rocketStartPosition, setRocketStartPosition] = useState("86%");
+  const [rocketEndX, setRocketEndX] = useState("calc(60vw - 80px)");
   const rocketRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -70,11 +72,36 @@ const RocketEffect = () => {
   // Update rocket position based on multiplier from betting system
   useEffect(() => {
     if (isAnimating && multiplier > 1.0) {
-      // Calculate Y position based on exact multiplier value (1.00x -> 0px, 7.00x -> -480px)
-      const maxYRange = 480;
+      // Get container height to calculate responsive Y position
+      const containerHeight = containerRef.current?.offsetHeight || 600;
+      
+      // Calculate scale marker positions
+      // Scale goes from 7.00x (top) to 0.00x (bottom)
+      // We have 27 markers total, and we care about positions from 1.00x to 7.00x
+      // 1.00x is at index 24 (from top), 7.00x is at index 0
+      const totalMarkers = 27;
+      const markerForSeven = 0;
+      const markerForOne = 24;
+      
+      // Check if we're on large screen (lg breakpoint is 1024px)
+      const isLargeScreen = window.innerWidth >= 1024;
+      // py-2 = 0.5rem = 8px, py-4 = 1rem = 16px
+      const paddingTop = isLargeScreen ? 16 : 8;
+      const paddingBottom = isLargeScreen ? 16 : 8;
+      const usableHeight = containerHeight - paddingTop - paddingBottom;
+      
+      // Position of 1.00x marker from top
+      const oneXPosition = paddingTop + (markerForOne / (totalMarkers - 1)) * usableHeight;
+      // Position of 7.00x marker from top
+      const sevenXPosition = paddingTop + (markerForSeven / (totalMarkers - 1)) * usableHeight;
+      
+      // Calculate Y range for rocket movement
+      const yRange = oneXPosition - sevenXPosition;
+      
+      // Calculate rocket's Y position based on multiplier
       const clampedMultiplier = Math.min(Math.max(multiplier, 1.0), 7.0);
       const scalePosition = (clampedMultiplier - 1.0) / (7.0 - 1.0);
-      const newY = -scalePosition * maxYRange;
+      const newY = -scalePosition * yRange;
 
       setRocketY(newY);
 
@@ -136,11 +163,93 @@ const RocketEffect = () => {
     }
   }, [gameState.currentGame?.status, gameState.currentGame?.final_multiplier]);
 
-  // Initialize component
+  // Initialize component and calculate rocket start position
   useEffect(() => {
     console.log("[v0] RocketEffect component initialized with betting system");
     setRocketY(0);
     setRocketRotation(0);
+    
+    // Calculate the starting position of the rocket to align with 1.00x marker
+    const calculateStartPosition = () => {
+      if (containerRef.current) {
+        const containerHeight = containerRef.current.offsetHeight;
+        const windowWidth = window.innerWidth;
+        
+        // Calculate scale marker positions
+        const totalMarkers = 27;
+        const markerForOne = 20;
+        
+        // Check if we're on large screen (lg breakpoint is 1024px)
+        const isLargeScreen = windowWidth >= 1024;
+        const isSmallScreen = windowWidth < 640;
+        
+        // py-2 = 0.5rem = 8px, py-4 = 1rem = 16px
+        const paddingTop = isLargeScreen ? 16 : 8;
+        const paddingBottom = isLargeScreen ? 16 : 8;
+        const usableHeight = containerHeight - paddingTop - paddingBottom;
+        
+        // Position of 1.00x marker from top
+        // The markers are distributed evenly with justify-between
+        // Index 24 out of 27 markers (0-26) should be at 1.00x
+        const oneXPositionPx = paddingTop + (markerForOne / (totalMarkers - 1)) * usableHeight;
+        
+        // The rocket's visual center (the main body) is offset from its container's top
+        // because of internal SVG positioning. We need to add an offset to move it down.
+        // Through testing, the rocket appears ~3 marker positions too high
+        // Each marker spacing is usableHeight / 26
+        const markerSpacing = usableHeight / (totalMarkers - 1);
+        const rocketVisualOffset = markerSpacing * 3; // Adjust rocket down by 3 marker positions
+        
+        const adjustedPositionPx = oneXPositionPx + rocketVisualOffset;
+        const oneXPositionPercent = (adjustedPositionPx / containerHeight) * 100;
+        
+        setRocketStartPosition(`${oneXPositionPercent}%`);
+        
+        console.log("[v0] Rocket start position (1.00x marker):", {
+          containerHeight,
+          paddingTop,
+          usableHeight,
+          oneXPositionPx,
+          markerSpacing,
+          rocketVisualOffset,
+          adjustedPositionPx,
+          oneXPositionPercent,
+          markerIndex: markerForOne,
+          totalMarkers
+        });
+        
+        // Calculate responsive end X position
+        if (isSmallScreen) {
+          setRocketEndX("calc(50vw - 40px)");
+        } else if (isLargeScreen) {
+          setRocketEndX("calc(60vw - 80px)");
+        } else {
+          setRocketEndX("calc(55vw - 60px)");
+        }
+        
+        console.log("[v0] Rocket positions calculated:", {
+          containerHeight,
+          oneXPositionPercent,
+          isLargeScreen,
+          isSmallScreen,
+          paddingTop,
+          usableHeight,
+          endX: isSmallScreen ? "50vw-40px" : isLargeScreen ? "60vw-80px" : "55vw-60px"
+        });
+      }
+    };
+    
+    // Wait for container to be rendered, then calculate
+    const timer = setTimeout(() => {
+      calculateStartPosition();
+    }, 100);
+    
+    // Recalculate on window resize
+    window.addEventListener('resize', calculateStartPosition);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', calculateStartPosition);
+    };
   }, []); // Run once on mount
 
   // Handle video playback issues and power saving interruptions
@@ -228,6 +337,36 @@ const RocketEffect = () => {
       setIsNearCompletion(false);
       setShowBoomEffect(false);
       setShowRedFlash(false);
+      
+      // Recalculate start position to ensure sync on game reset
+      if (containerRef.current) {
+        const containerHeight = containerRef.current.offsetHeight;
+        const windowWidth = window.innerWidth;
+        const totalMarkers = 27;
+        const markerForOne = 20;
+        const isLargeScreen = windowWidth >= 1024;
+        const isSmallScreen = windowWidth < 640;
+        const paddingTop = isLargeScreen ? 16 : 8;
+        const paddingBottom = isLargeScreen ? 16 : 8;
+        const usableHeight = containerHeight - paddingTop - paddingBottom;
+        
+        // Position of 1.00x marker from top with visual offset adjustment
+        const oneXPositionPx = paddingTop + (markerForOne / (totalMarkers - 1)) * usableHeight;
+        const markerSpacing = usableHeight / (totalMarkers - 1);
+        const rocketVisualOffset = markerSpacing * 3; // Adjust rocket down by 3 marker positions
+        const adjustedPositionPx = oneXPositionPx + rocketVisualOffset;
+        const oneXPositionPercent = (adjustedPositionPx / containerHeight) * 100;
+        setRocketStartPosition(`${oneXPositionPercent}%`);
+        
+        // Also recalculate end X position
+        if (isSmallScreen) {
+          setRocketEndX("calc(50vw - 40px)");
+        } else if (isLargeScreen) {
+          setRocketEndX("calc(60vw - 80px)");
+        } else {
+          setRocketEndX("calc(55vw - 60px)");
+        }
+      }
     }
   }, [gameState.currentGame?.id, gameState.currentGame?.status]);
 
@@ -509,20 +648,21 @@ const RocketEffect = () => {
         <motion.div
           ref={rocketRef}
           key={animationKey}
-          className="absolute z-20 scale-90"
+          className="absolute z-20 scale-[0.6] sm:scale-75 lg:scale-90"
           style={{
-            top: "86%", // Move rocket down to start at 1.00× position
+            top: rocketStartPosition, // Dynamically calculated to align with 1.00× marker
+            y: rocketY, // Apply Y directly to style for instant update
+            rotate: `${rocketRotation}deg`, // Apply rotation directly to style for instant update
+            opacity: showBoomEffect ? 0 : undefined, // Apply opacity directly for instant hide on explosion
           }}
-          initial={{ x: "-150px", y: 0, rotate: 0, opacity: 1 }}
+          initial={{ x: "-150px", opacity: 1 }}
           animate={
             isAnimating && gameState.currentGame?.status === 'RUNNING'
               ? {
-                  x: "calc(60vw - 80px)",
-                  y: rocketY,
-                  rotate: rocketRotation,
+                  x: rocketEndX,
                   opacity: showBoomEffect ? 0 : 1,
                 }
-              : { x: "-150px", y: 0, rotate: 0, opacity: 0 }
+              : { x: "-150px", opacity: 0 }
           }
           transition={
             isAnimating && gameState.currentGame?.status === 'RUNNING'
@@ -531,17 +671,9 @@ const RocketEffect = () => {
                     duration: 40,
                     ease: "linear",
                   },
-                  y: {
-                    duration: 0, // Immediate update - no animation delay
-                    ease: "linear",
-                  },
-                  rotate: {
-                    duration: 0, // Immediate update - no animation delay
-                    ease: "linear",
-                  },
                   opacity: {
-                    duration: showBoomEffect ? 1.1 : 0.5,
-                    ease: showBoomEffect ? "easeOut" : "easeInOut",
+                    duration: showBoomEffect ? 0 : 0.5, // Instant hide when boom effect triggers
+                    ease: "easeInOut",
                   },
                 }
               : {
