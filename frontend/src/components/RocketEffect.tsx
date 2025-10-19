@@ -654,16 +654,27 @@ const RocketEffect = () => {
             top: rocketStartPosition, // Dynamically calculated to align with 1.00× marker
             y: rocketY, // Apply Y directly to style for instant update
             rotate: `${rocketRotation}deg`, // Apply rotation directly to style for instant update
-            opacity: showBoomEffect ? 0 : undefined, // Apply opacity directly for instant hide on explosion
+            // Rocket visibility logic:
+            // - Show during COUNTDOWN (preparing for launch)
+            // - Show during RUNNING (actively flying)
+            // - Hide when boom effect is active (explosion)
+            // - Hide during COMPLETED state (after explosion)
+            opacity: showBoomEffect 
+              ? 0 
+              : (isAnimating || gameState.currentGame?.status === 'COUNTDOWN' || !gameState.currentGame)
+              ? 1
+              : 0,
+            willChange: 'transform, opacity', // Optimize for performance
           }}
-          initial={{ x: "-150px", opacity: 1 }}
+          initial={{ x: "-150px" }}
           animate={
             isAnimating && gameState.currentGame?.status === 'RUNNING'
               ? {
                   x: rocketEndX,
-                  opacity: showBoomEffect ? 0 : 1,
                 }
-              : { x: "-150px", opacity: 0 }
+              : {
+                  x: "-150px",
+                }
           }
           transition={
             isAnimating && gameState.currentGame?.status === 'RUNNING'
@@ -672,17 +683,9 @@ const RocketEffect = () => {
                     duration: 40,
                     ease: "linear",
                   },
-                  opacity: {
-                    duration: showBoomEffect ? 0 : 0.5, // Instant hide when boom effect triggers
-                    ease: "easeInOut",
-                  },
                 }
               : {
                   duration: 0.3,
-                  opacity: {
-                    duration: 0.3,
-                    ease: "easeInOut",
-                  },
                 }
           }
         >
@@ -715,3 +718,4 @@ const RocketEffect = () => {
 };
 
 export default RocketEffect;
+
