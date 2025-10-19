@@ -3,19 +3,21 @@
 import { useEffect, useMemo, useState } from "react";
 
 // Cookie utility functions
-const setCookie = (name: string, value: string, days: number = 365) => {
+const setCookie = (name: string, value: string, days = 365) => {
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
 };
 
 const getCookie = (name: string): string | null => {
   try {
     const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
+    const ca = document.cookie.split(";");
     for (let i = 0; i < ca.length; i++) {
       let c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      while (c.charAt(0) === " ") c = c.substring(1, c.length);
       if (c.indexOf(nameEQ) === 0) {
         const value = c.substring(nameEQ.length, c.length);
         return decodeURIComponent(value);
@@ -23,7 +25,7 @@ const getCookie = (name: string): string | null => {
     }
     return null;
   } catch (error) {
-    console.error('Error reading cookie:', name, error);
+    console.error("Error reading cookie:", name, error);
     return null;
   }
 };
@@ -35,10 +37,19 @@ const deleteCookie = (name: string) => {
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onAuthenticated: (user: { address: string; name: string; email: string; balance?: number }) => void;
+  onAuthenticated: (user: {
+    address: string;
+    name: string;
+    email: string;
+    balance?: number;
+  }) => void;
 };
 
-export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: Props) {
+export default function WalletLoginModal({
+  isOpen,
+  onClose,
+  onAuthenticated,
+}: Props) {
   const [address, setAddress] = useState<string>("");
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -56,17 +67,20 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
       setSubmitting(false);
     } else {
       // Load saved data from cookies when modal opens
-      const savedName = getCookie('user_name');
-      const savedEmail = getCookie('user_email');
-      const savedAddress = getCookie('user_address');
-      
+      const savedName = getCookie("user_name");
+      const savedEmail = getCookie("user_email");
+      const savedAddress = getCookie("user_address");
+
       if (savedName) setName(savedName);
       if (savedEmail) setEmail(savedEmail);
       if (savedAddress) setAddress(savedAddress);
     }
   }, [isOpen]);
 
-  const backendBase = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000", []);
+  const backendBase = useMemo(
+    () => process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000",
+    []
+  );
 
   const connectWallet = async () => {
     setError(null);
@@ -100,20 +114,20 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
       const res = await fetch(`${backendBase}/api/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, name, email })
+        body: JSON.stringify({ address, name, email }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
       const user = await res.json();
-      
+
       // Save user data to cookies with 1 year expiration
-      setCookie('user_name', name, 365);
-      setCookie('user_email', email, 365);
-      setCookie('user_address', address, 365);
-      setCookie('user_balance', user.balance?.toString() || '1000', 365);
-      
+      setCookie("user_name", name, 365);
+      setCookie("user_email", email, 365);
+      setCookie("user_address", address, 365);
+      setCookie("user_balance", user.balance?.toString() || "1000", 365);
+
       onAuthenticated(user);
       onClose();
     } catch (e: any) {
@@ -129,8 +143,12 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-md rounded-2xl glass p-4 lg:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg lg:text-xl font-bold">Connect Wallet to Play</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+          <h2 className="text-lg lg:text-xl font-bold">
+            Connect Wallet to Play
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            ✕
+          </button>
         </div>
 
         <div className="space-y-4">
@@ -139,9 +157,13 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
             disabled={connecting}
             className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 px-4 py-3 rounded-lg font-medium disabled:opacity-50"
           >
-            {connecting ? "Connecting..." : address ? `Connected: ${address.slice(0, 6)}...` : "Connect Phantom Wallet"}
+            {connecting
+              ? "Connecting..."
+              : address
+              ? `Connected: ${address.slice(0, 6)}...`
+              : "Connect Phantom Wallet"}
           </button>
-          
+
           {address && (
             <div className="text-xs text-green-400 bg-green-900/20 border border-green-500/30 rounded p-2">
               ✅ Wallet connected successfully
@@ -150,7 +172,10 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
 
           <div className="space-y-2">
             <label className="block text-sm text-gray-300">
-              Name {name && getCookie('user_name') === name && <span className="text-green-400 text-xs">(saved)</span>}
+              Name{" "}
+              {name && getCookie("user_name") === name && (
+                <span className="text-green-400 text-xs">(saved)</span>
+              )}
             </label>
             <input
               value={name}
@@ -161,7 +186,10 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
           </div>
           <div className="space-y-2">
             <label className="block text-sm text-gray-300">
-              Email {email && getCookie('user_email') === email && <span className="text-green-400 text-xs">(saved)</span>}
+              Email{" "}
+              {email && getCookie("user_email") === email && (
+                <span className="text-green-400 text-xs">(saved)</span>
+              )}
             </label>
             <input
               type="email"
@@ -181,7 +209,7 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
           >
             {submitting ? "Saving..." : "Save & Play"}
           </button>
-          
+
           {!address || !name || !email ? (
             <div className="text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-500/30 rounded p-2">
               ⚠️ Please complete all fields to continue
@@ -192,5 +220,3 @@ export default function WalletLoginModal({ isOpen, onClose, onAuthenticated }: P
     </div>
   );
 }
-
-

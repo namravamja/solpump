@@ -36,20 +36,20 @@ export default function MainGame() {
 
   return (
     <div className="flex-1 flex flex-col bg-black min-h-screen overflow-hidden">
-      {/* Header */}
-      <div className="text-left px-4 lg:pl-6 pt-4 lg:pt-6">
-        <h1 className="text-white text-lg lg:text-2xl font-bold">
+      <div className="text-left px-2 sm:px-4 lg:pl-6 pt-2 sm:pt-4 lg:pt-6">
+        <h1 className="text-white text-base sm:text-lg lg:text-2xl font-bold">
           SOLPUMP: SOLANA'S MOST TRUSTED SOLANA CASINO
         </h1>
       </div>
 
-      {/* Past Multipliers Row */}
-      <div className="flex justify-start py-2 px-4 lg:pl-6">
+      <div className="flex justify-start py-2 px-2 sm:px-4 lg:pl-6 overflow-x-auto">
         <div className="flex space-x-1 lg:space-x-2 flex-wrap">
           {pastMultipliers.map((multiplier, index) => (
             <div
               key={index}
-              className={`px-2 lg:px-4 py-1 lg:py-2 rounded text-xs lg:text-sm font-bold whitespace-nowrap ${getMultiplierColor(multiplier.color)}`}
+              className={`px-2 sm:px-3 lg:px-4 py-1 lg:py-2 rounded text-xs lg:text-sm font-bold whitespace-nowrap ${getMultiplierColor(
+                multiplier.color
+              )}`}
             >
               {multiplier.value}
             </div>

@@ -44,7 +44,10 @@ export default function Sidebar() {
   const [airdropAmount, setAirdropAmount] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<Date | null>(null);
   const [now, setNow] = useState<Date>(new Date());
-  const backendBase = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000", []);
+  const backendBase = useMemo(
+    () => process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000",
+    []
+  );
 
   useEffect(() => {
     const run = async () => {
@@ -53,7 +56,7 @@ export default function Sidebar() {
         if (res.ok) {
           const data = await res.json();
           const list = (data?.users ?? []) as any[];
-          setUsers(list.map(u => ({ id: u.id, name: u.name })));
+          setUsers(list.map((u) => ({ id: u.id, name: u.name })));
           setParticipants(Array.isArray(list) ? list.length : 0);
         }
       } catch {}
@@ -78,33 +81,49 @@ export default function Sidebar() {
     loadAirdrop();
     const t = setInterval(loadAirdrop, 30000);
     const tick = setInterval(() => setNow(new Date()), 1000);
-    return () => { clearInterval(t); clearInterval(tick); };
+    return () => {
+      clearInterval(t);
+      clearInterval(tick);
+    };
   }, [backendBase]);
 
   const remaining = useMemo(() => {
     if (!endsAt) return null;
     const ms = Math.max(0, endsAt.getTime() - now.getTime());
     const totalSec = Math.floor(ms / 1000);
-    const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
-    const s = (totalSec % 60).toString().padStart(2, '0');
+    const m = Math.floor(totalSec / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (totalSec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   }, [endsAt, now]);
 
   const messages: Message[] = useMemo(() => {
     if (!user && users.length === 0) return chatMessages;
-    const rows: Message[] = (user ? [{ id: 'me', username: user.name, level: "1", message: "", avatar: "👤" }] : [])
-      .concat(
-        users
-          .filter(u => !user || u.name !== user.name)
-          .slice(0, 10)
-          .map((u, i) => ({
-            id: String(u.id ?? i),
-            username: u.name,
-            level: String(1 + (i % 20)),
-            message: "",
-            avatar: i % 2 ? "👨‍🚀" : "🦜",
-          }))
-      );
+    const rows: Message[] = (
+      user
+        ? [
+            {
+              id: "me",
+              username: user.name,
+              level: "1",
+              message: "",
+              avatar: "👤",
+            },
+          ]
+        : []
+    ).concat(
+      users
+        .filter((u) => !user || u.name !== user.name)
+        .slice(0, 10)
+        .map((u, i) => ({
+          id: String(u.id ?? i),
+          username: u.name,
+          level: String(1 + (i % 20)),
+          message: "",
+          avatar: i % 2 ? "👨‍🚀" : "🦜",
+        }))
+    );
     return rows;
   }, [user, users]);
 
@@ -132,9 +151,11 @@ export default function Sidebar() {
       "rip",
       "Let's go 🚀",
       "cashout or no?",
-      "need 0.005 for fee"
+      "need 0.005 for fee",
     ];
-    function randomAvatar(i: number) { return i % 2 ? "👨‍🚀" : "🦜"; }
+    function randomAvatar(i: number) {
+      return i % 2 ? "👨‍🚀" : "🦜";
+    }
     let i = 0;
     const interval = setInterval(() => {
       const pool = users.length ? users : [{ name: "Guest" } as any];
@@ -143,11 +164,11 @@ export default function Sidebar() {
       const next: Message = {
         id: `auto-${Date.now()}`,
         username: pick.name,
-        level: String(1 + ((i++) % 20)),
+        level: String(1 + (i++ % 20)),
         message: text,
-        avatar: randomAvatar(i)
+        avatar: randomAvatar(i),
       };
-      setChatFeed(prev => {
+      setChatFeed((prev) => {
         const merged = [...prev, next];
         return merged.slice(-50); // cap to last 50
       });
@@ -172,81 +193,104 @@ export default function Sidebar() {
         ☰
       </button>
 
-      {/* Sidebar */}
       <div
         className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-gradient-to-b from-[#0a0a0f] via-gray-900 to-black border-r border-purple-500/20 transition-transform duration-300 z-40 backdrop-blur-sm ${
           isCollapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0"
-        } w-full lg:w-80`}
+        } w-full sm:w-96 lg:w-80`}
       >
-        <div className="flex flex-col h-full pt-4 min-h-0">
+        <div className="flex flex-col h-full pt-2 sm:pt-4 min-h-0">
           {/* Airdrop Section */}
-          <div className="p-3">
-            <div className="relative bg-black border-2 border-transparent rounded-lg p-3 mb-3">
+          <div className="p-2 sm:p-3">
+            <div className="relative bg-black border-2 border-transparent rounded-lg p-2 sm:p-3 mb-3">
               {/* Gradient border effect */}
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 p-[2px]">
                 <div className="h-full w-full rounded-lg bg-black"></div>
               </div>
-              
+
               <div className="relative z-10">
                 {/* AIRDROP text centered above content */}
                 <div className="text-center mb-2">
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent tracking-wider">
+                  <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent tracking-wider">
                     AIRDROP
                   </h2>
                 </div>
 
                 {/* Main content row */}
-                <div className="flex items-center space-x-1.5 mb-2">
+                <div className="flex items-center space-x-1 sm:space-x-1.5 mb-2">
                   {/* Display field with Solana logo and value */}
                   <div className="flex items-center bg-gray-900 rounded-md px-2 py-1.5 flex-1">
-                    <div className="w-5 h-5 bg-purple-500/20 rounded-full flex items-center justify-center mr-1.5">
-                      <span className="text-purple-400 text-xs font-bold">S</span>
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-purple-500/20 rounded-full flex items-center justify-center mr-1">
+                      <span className="text-purple-400 text-xs font-bold">
+                        S
+                      </span>
                     </div>
-                    <span className="text-white text-base font-bold price-text">{airdropAmount ?? 0.06}</span>
+                    <span className="text-white text-sm sm:text-base font-bold price-text">
+                      {airdropAmount ?? 0.06}
+                    </span>
                   </div>
-                  
+
                   {/* Action button */}
                   <button className="bg-purple-600 hover:bg-purple-500 rounded-md p-1.5 transition-colors duration-200">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
                   </button>
-                  
+
                   {/* Timer */}
-                  <div className="text-gray-300 text-sm font-mono font-bold price-text">{remaining ?? "--:--"}</div>
+                  <div className="text-gray-300 text-xs sm:text-sm font-mono font-bold price-text">
+                    {remaining ?? "--:--"}
+                  </div>
                 </div>
 
                 {/* Progress bar */}
                 <div className="w-full h-0.5 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" style={{width: '45%'}}></div>
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                    style={{ width: "45%" }}
+                  ></div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Chat Section */}
-          <div className="flex-1 flex flex-col px-3 min-h-0">
+          <div className="flex-1 flex flex-col px-2 sm:px-3 min-h-0">
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3" ref={chatListRef}>
+            <div
+              className="flex-1 overflow-y-auto space-y-2 mb-3"
+              ref={chatListRef}
+            >
               {chatFeed.map((msg) => (
-                <div key={msg.id} className="flex items-start space-x-2 p-2 hover:bg-gray-800/30 rounded-lg transition-colors duration-200">
+                <div
+                  key={msg.id}
+                  className="flex items-start space-x-2 p-2 hover:bg-gray-800/30 rounded-lg transition-colors duration-200"
+                >
                   {/* Avatar */}
-                  <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center text-sm flex-shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-700 rounded-lg flex items-center justify-center text-xs sm:text-sm flex-shrink-0">
                     {msg.avatar}
                   </div>
-                  
+
                   {/* Message Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-white font-semibold text-sm">
+                      <span className="text-white font-semibold text-xs sm:text-sm truncate">
                         {msg.username}
                       </span>
-                      <span className="bg-gray-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                      <span className="bg-gray-600 text-white text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                         {msg.level}
                       </span>
                     </div>
                     {msg.message && (
-                      <p className="text-gray-300 text-sm">
+                      <p className="text-gray-300 text-xs sm:text-sm break-words">
                         {msg.message}
                       </p>
                     )}
@@ -260,16 +304,27 @@ export default function Sidebar() {
             {/* Chat Input Area */}
             <div className="mb-3">
               {/* Channel Selector */}
-              <div className="flex items-center justify-between mb-2">
-                <button className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 rounded-lg px-3 py-2 transition-colors duration-200">
-                  <span className="text-white text-sm font-medium">Russian Chat</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6,9 12,15 18,9"/>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <button className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 rounded-lg px-2 sm:px-3 py-2 transition-colors duration-200 text-xs sm:text-sm flex-shrink-0">
+                  <span className="text-white font-medium">Russian Chat</span>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="6,9 12,15 18,9" />
                   </svg>
                 </button>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 flex-shrink-0">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-white text-sm font-medium">{participants}</span>
+                  <span className="text-white text-xs sm:text-sm font-medium">
+                    {participants}
+                  </span>
                 </div>
               </div>
 
@@ -280,16 +335,25 @@ export default function Sidebar() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type message..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors duration-200"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 sm:px-3 py-2 text-white placeholder-gray-400 text-xs sm:text-sm focus:outline-none focus:border-purple-500 transition-colors duration-200"
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-                  <button className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded flex items-center justify-center transition-colors duration-200">
-                    <span className="text-xs">😊</span>
+                  <button className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-600 hover:bg-gray-500 rounded flex items-center justify-center transition-colors duration-200 text-xs">
+                    😊
                   </button>
-                  <button className="w-6 h-6 bg-purple-600 hover:bg-purple-500 rounded flex items-center justify-center transition-colors duration-200">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/>
-                      <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                  <button className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-600 hover:bg-purple-500 rounded flex items-center justify-center transition-colors duration-200">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22,2 15,22 11,13 2,9 22,2" />
                     </svg>
                   </button>
                 </div>
@@ -297,13 +361,11 @@ export default function Sidebar() {
             </div>
 
             {/* Total Bets */}
-            <div className="text-center py-3 border-t border-gray-800/50">
-              <div className="text-white font-bold text-lg">
+            <div className="text-center py-2 sm:py-3 border-t border-gray-800/50">
+              <div className="text-white font-bold text-base sm:text-lg">
                 2,651,263
               </div>
-              <div className="text-gray-400 text-sm">
-                Total Bets
-              </div>
+              <div className="text-gray-400 text-xs sm:text-sm">Total Bets</div>
             </div>
           </div>
         </div>
