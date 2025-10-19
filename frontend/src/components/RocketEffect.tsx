@@ -83,6 +83,7 @@ const RocketEffect = () => {
       const markerForSeven = 0;
       const markerForOne = 24;
       
+      
       // Check if we're on large screen (lg breakpoint is 1024px)
       const isLargeScreen = window.innerWidth >= 1024;
       // py-2 = 0.5rem = 8px, py-4 = 1rem = 16px
