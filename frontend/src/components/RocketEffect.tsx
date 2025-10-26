@@ -365,7 +365,7 @@ const RocketEffect = () => {
         const oneXPositionPercent = (adjustedPositionPx / containerHeight) * 100;
         setRocketStartPosition(`${oneXPositionPercent}%`);
         
-        // Also recalculate end X position - 50px from the right edge
+        // Also recalculate end X position - 56px from the right edge
         const containerWidth = containerRef.current.offsetWidth;
         const spacingFromRightEdge = 56;
         const dynamicEndX = `calc(${containerWidth - spacingFromRightEdge}px)`;
