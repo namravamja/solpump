@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Rocket from "./Rocket/Rocket";
 import { useBettingSimple } from "../hooks/useBettingSimple";
 import { useWalletSimple } from "../hooks/useWalletSimple";
@@ -15,7 +15,7 @@ const RocketEffect = () => {
   const [rocketY, setRocketY] = useState(0);
   const [rocketRotation, setRocketRotation] = useState(0);
   const [rocketStartPosition, setRocketStartPosition] = useState("86%");
-  const [rocketEndX, setRocketEndX] = useState("calc(60vw - 80px)");
+  const [rocketEndX, setRocketEndX] = useState("calc(59vw - 50px)"); // Better default matching mid-range calculation
   const rocketRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +71,7 @@ const RocketEffect = () => {
 
   // Update rocket position based on multiplier from betting system
   useEffect(() => {
-    if (isAnimating && multiplier > 1.0) {
+    if (isAnimating && multiplier >= 1.0) {
       // Get container height to calculate responsive Y position
       const containerHeight = containerRef.current?.offsetHeight || 600;
       
@@ -104,12 +104,25 @@ const RocketEffect = () => {
       const scalePosition = (clampedMultiplier - 1.0) / (7.0 - 1.0);
       const newY = -scalePosition * yRange;
 
-      setRocketY(newY);
+      // Use requestAnimationFrame for smoother updates
+      requestAnimationFrame(() => {
+        setRocketY(newY);
+      });
 
       // Calculate rotation based on exact multiplier value
-      const maxRotation = 40; // Maximum rotation at 7.00×
+      // More dramatic tilt as rocket climbs higher - simulates climbing effort
+      const maxRotation = 60; // Increased from 40 to 60 degrees for more dramatic effect
       const newRotation = -scalePosition * maxRotation;
-      setRocketRotation(newRotation);
+      
+      // Add additional tilt based on how high the rocket has climbed
+      // Higher multiplier = more tilt (simulating climbing difficulty)
+      const additionalTilt = scalePosition * 15; // Extra 15 degrees at max height
+      const finalRotation = newRotation - additionalTilt;
+      
+      // Use requestAnimationFrame for smoother updates
+      requestAnimationFrame(() => {
+        setRocketRotation(finalRotation);
+      });
     } else if (!isAnimating && gameState.currentGame?.status === 'COUNTDOWN') {
       // Only reset when countdown starts, not when game completes
       setRocketY(0);
@@ -165,7 +178,7 @@ const RocketEffect = () => {
   }, [gameState.currentGame?.status, gameState.currentGame?.final_multiplier]);
 
   // Initialize component and calculate rocket start position
-  useEffect(() => {
+  useLayoutEffect(() => {
     console.log("[v0] RocketEffect component initialized with betting system");
     setRocketY(0);
     setRocketRotation(0);
@@ -219,36 +232,43 @@ const RocketEffect = () => {
           totalMarkers
         });
         
-        // Calculate responsive end X position
-        if (isSmallScreen) {
-          setRocketEndX("calc(50vw - 40px)");
-        } else if (isLargeScreen) {
-          setRocketEndX("calc(60vw - 80px)");
-        } else {
-          setRocketEndX("calc(55vw - 60px)");
-        }
+        // Calculate responsive end X position dynamically based on screen width
+        // Using a smooth continuous function instead of fixed breakpoints
+        // Formula: Interpolate between viewport percentage and offset based on screen width
+        const minWidth = 320; // Minimum supported screen width
+        const maxWidth = 2560; // Maximum reference screen width
+        const clampedWidth = Math.max(minWidth, Math.min(maxWidth, windowWidth));
+        
+        // Viewport percentage: scales from 51% (small screens) to 71% (ultra-wide screens)
+        // Moved 1% more to the right for optimal positioning
+        const viewportPercentage = 51 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * 20;
+        
+        // Offset: scales from -30px (small) to -60px (large) for better positioning
+        // Increased offset to create more space from scale markers
+        const offset = -30 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * -30;
+        
+        const dynamicEndX = `calc(${viewportPercentage}vw + ${offset}px)`;
+        setRocketEndX(dynamicEndX);
         
         console.log("[v0] Rocket positions calculated:", {
           containerHeight,
           oneXPositionPercent,
-          isLargeScreen,
-          isSmallScreen,
+          windowWidth,
+          viewportPercentage: viewportPercentage.toFixed(2),
+          offset: offset.toFixed(2),
+          dynamicEndX,
           paddingTop,
-          usableHeight,
-          endX: isSmallScreen ? "50vw-40px" : isLargeScreen ? "60vw-80px" : "55vw-60px"
+          usableHeight
         });
       }
     };
     
-    // Wait for container to be rendered, then calculate
-    const timer = setTimeout(() => {
-      calculateStartPosition();
-    }, 100);
+    // Calculate immediately - no timeout needed with useLayoutEffect
+    calculateStartPosition();
     
     // Recalculate on window resize
     window.addEventListener('resize', calculateStartPosition);
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('resize', calculateStartPosition);
     };
   }, []); // Run once on mount
@@ -346,7 +366,6 @@ const RocketEffect = () => {
         const totalMarkers = 27;
         const markerForOne = 20;
         const isLargeScreen = windowWidth >= 1024;
-        const isSmallScreen = windowWidth < 640;
         const paddingTop = isLargeScreen ? 16 : 8;
         const paddingBottom = isLargeScreen ? 16 : 8;
         const usableHeight = containerHeight - paddingTop - paddingBottom;
@@ -359,14 +378,14 @@ const RocketEffect = () => {
         const oneXPositionPercent = (adjustedPositionPx / containerHeight) * 100;
         setRocketStartPosition(`${oneXPositionPercent}%`);
         
-        // Also recalculate end X position
-        if (isSmallScreen) {
-          setRocketEndX("calc(50vw - 40px)");
-        } else if (isLargeScreen) {
-          setRocketEndX("calc(60vw - 80px)");
-        } else {
-          setRocketEndX("calc(55vw - 60px)");
-        }
+        // Also recalculate end X position dynamically
+        const minWidth = 320;
+        const maxWidth = 2560;
+        const clampedWidth = Math.max(minWidth, Math.min(maxWidth, windowWidth));
+        const viewportPercentage = 51 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * 20;
+        const offset = -30 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * -30;
+        const dynamicEndX = `calc(${viewportPercentage}vw + ${offset}px)`;
+        setRocketEndX(dynamicEndX);
       }
     }
   }, [gameState.currentGame?.id, gameState.currentGame?.status]);
@@ -698,7 +717,7 @@ const RocketEffect = () => {
               ],
             }}
             transition={{
-              duration: 0.15,
+              duration: 0.1,
               ease: "linear",
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "loop",
