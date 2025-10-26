@@ -232,30 +232,17 @@ const RocketEffect = () => {
           totalMarkers
         });
         
-        // Calculate responsive end X position dynamically based on screen width
-        // Using a smooth continuous function instead of fixed breakpoints
-        // Formula: Interpolate between viewport percentage and offset based on screen width
-        const minWidth = 320; // Minimum supported screen width
-        const maxWidth = 2560; // Maximum reference screen width
-        const clampedWidth = Math.max(minWidth, Math.min(maxWidth, windowWidth));
-        
-        // Viewport percentage: scales from 51% (small screens) to 71% (ultra-wide screens)
-        // Moved 1% more to the right for optimal positioning
-        const viewportPercentage = 51 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * 20;
-        
-        // Offset: scales from -30px (small) to -60px (large) for better positioning
-        // Increased offset to create more space from scale markers
-        const offset = -30 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * -30;
-        
-        const dynamicEndX = `calc(${viewportPercentage}vw + ${offset}px)`;
+                  const containerWidth = containerRef.current.offsetWidth;
+        const spacingFromRightEdge = 48;
+        const dynamicEndX = `calc(${containerWidth - spacingFromRightEdge}px)`;
         setRocketEndX(dynamicEndX);
         
         console.log("[v0] Rocket positions calculated:", {
           containerHeight,
           oneXPositionPercent,
           windowWidth,
-          viewportPercentage: viewportPercentage.toFixed(2),
-          offset: offset.toFixed(2),
+          containerWidth,
+          spacingFromRightEdge,
           dynamicEndX,
           paddingTop,
           usableHeight
@@ -378,13 +365,10 @@ const RocketEffect = () => {
         const oneXPositionPercent = (adjustedPositionPx / containerHeight) * 100;
         setRocketStartPosition(`${oneXPositionPercent}%`);
         
-        // Also recalculate end X position dynamically
-        const minWidth = 320;
-        const maxWidth = 2560;
-        const clampedWidth = Math.max(minWidth, Math.min(maxWidth, windowWidth));
-        const viewportPercentage = 51 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * 20;
-        const offset = -30 + ((clampedWidth - minWidth) / (maxWidth - minWidth)) * -30;
-        const dynamicEndX = `calc(${viewportPercentage}vw + ${offset}px)`;
+        // Also recalculate end X position - 48px from the right edge
+        const containerWidth = containerRef.current.offsetWidth;
+        const spacingFromRightEdge = 48;
+        const dynamicEndX = `calc(${containerWidth - spacingFromRightEdge}px)`;
         setRocketEndX(dynamicEndX);
       }
     }
